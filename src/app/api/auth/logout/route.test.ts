@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { POST } from "./route";
-import { currentAccount } from "@/modules/auth/service";
+import { authenticatedAccount } from "@/modules/auth/service";
 import { revokeSession } from "@/server/auth/sessions";
 
-vi.mock("@/modules/auth/service", () => ({ currentAccount: vi.fn() }));
+vi.mock("@/modules/auth/service", () => ({ authenticatedAccount: vi.fn() }));
 vi.mock("@/server/auth/sessions", async importOriginal => ({
   ...await importOriginal<typeof import("@/server/auth/sessions")>(),
   revokeSession: vi.fn(),
@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 it.each([undefined, "", "{}"])("revokes the session and clears the cookie for body %j", async body => {
-  vi.mocked(currentAccount).mockResolvedValue({ sessionId: "test-session" } as never);
+  vi.mocked(authenticatedAccount).mockResolvedValue({ sessionId: "test-session" } as never);
   const response = await POST(new Request("http://localhost:3000/api/auth/logout", {
     method: "POST", headers: { origin: "http://localhost:3000", ...(body === "{}" ? { "Content-Type": "application/json" } : {}) }, body,
   }));

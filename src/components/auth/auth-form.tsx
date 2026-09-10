@@ -25,7 +25,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
         return;
       }
       notifySessionChange();
-      router.replace("/welcome"); router.refresh();
+      router.replace(result.data.hasWedding ? "/dashboard" : "/onboarding"); router.refresh();
     } catch { setError("We couldn’t connect. Please try again."); }
     finally { setPending(false); }
   }}>
@@ -38,11 +38,11 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
     <p className={styles.switch}>{signup ? "Already have an account?" : "New to Make My Marriage?"} <Link href={signup ? "/login" : "/signup"}>{signup ? "Sign in" : "Create an account"}</Link></p>
   </form>;
 }
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  return <div><button className={styles.primary} disabled={pending} onClick={async () => {
+  return <div><button className={className ?? styles.primary} disabled={pending} onClick={async () => {
     setPending(true); setError("");
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });

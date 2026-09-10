@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { signup, login, currentAccount } from "./service";
+import { signup, login, currentAccount, authenticatedAccount } from "./service";
 import * as repository from "./repository";
 import * as passwords from "@/server/auth/passwords";
+import { getWeddingContext } from "@/modules/weddings/service";
 import * as sessions from "@/server/auth/sessions";
 vi.mock("./repository", () => ({ findUserByEmail: vi.fn(), findUserById: vi.fn(), createUser: vi.fn() }));
 vi.mock("@/server/auth/passwords", () => ({ hashPassword: vi.fn(), verifyPassword: vi.fn(), getDummyHash: vi.fn() }));
 vi.mock("@/server/auth/sessions", () => ({ createSession: vi.fn(), readSession: vi.fn() }));
+vi.mock("@/modules/weddings/service", () => ({ getWeddingContext: vi.fn() }));
 const user = { _id: "123", name: "Test Person", email: "Person@example.com", passwordHash: "hash" };
-beforeEach(() => { vi.resetAllMocks(); });
+beforeEach(() => { vi.resetAllMocks(); vi.mocked(getWeddingContext).mockResolvedValue({ membership: null, wedding: null }); });
 describe("account use cases", () => {
   it("rejects duplicate normalized email before hashing", async () => {
     vi.mocked(repository.findUserByEmail).mockResolvedValue(user as never);
@@ -40,5 +42,18 @@ describe("account use cases", () => {
     vi.mocked(sessions.readSession).mockResolvedValue(null);
     expect(await currentAccount()).toBeNull();
     expect(repository.findUserById).not.toHaveBeenCalled();
+  });
+  it("allows authentication for logout even if wedding context is unavailable", async () => {
+    vi.mocked(sessions.readSession).mockResolvedValue({ _id: "session", userId: "123" } as never);
+    vi.mocked(repository.findUserById).mockResolvedValue(user as never);
+    vi.mocked(getWeddingContext).mockRejectedValue(new Error("Wedding unavailable"));
+    expect(await authenticatedAccount()).toMatchObject({ user: { id: "123" }, sessionId: "session" });
+    expect(getWeddingContext).not.toHaveBeenCalled();
+  });
+  it("reports existing wedding membership on login", async () => {
+    vi.mocked(repository.findUserByEmail).mockResolvedValue(user as never);
+    vi.mocked(passwords.verifyPassword).mockResolvedValue(true);
+    vi.mocked(getWeddingContext).mockResolvedValue({ membership: { role: "ADMIN" }, wedding: { id: "wedding" } } as never);
+    expect((await login({ email: "Person@example.com", password: "valid" })).hasWedding).toBe(true);
   });
 });

@@ -45,6 +45,15 @@ it("does not sign out on network failure", async () => {
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(mocks.replace).not.toHaveBeenCalled();
 });
+it("refreshes onboarding when a wedding is created in another tab", async () => {
+  SessionSync({ userId: "user", weddingId: null, children: "onboarding" });
+  cleanup = mocks.effects[0]();
+  await vi.waitFor(() => expect(mocks.setHidden).toHaveBeenCalledWith(false));
+  vi.mocked(fetch).mockResolvedValue({ status: 200, ok: true, json: async () => ({ data: { user: { id: "user" }, wedding: { id: "new-wedding" } } }) } as Response);
+  window.dispatchEvent(Object.assign(new Event("storage"), { key: "mmm:session-change" }));
+  await vi.waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  expect(mocks.setHidden).toHaveBeenCalledWith(true);
+});
 it("publishes only a change marker and tolerates disabled storage", () => {
   notifySessionChange();
   expect(localStorage.setItem).toHaveBeenCalledWith("mmm:session-change", expect.any(String));

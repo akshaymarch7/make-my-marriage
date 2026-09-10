@@ -4,6 +4,7 @@ import { loginSchema, signupSchema, normalizeEmail } from "./schemas";
 import { hashPassword, verifyPassword, getDummyHash } from "@/server/auth/passwords";
 import { createSession, readSession } from "@/server/auth/sessions";
 import { AppError } from "@/server/http/app-error";
+import { getWeddingContext } from "@/modules/weddings/service";
 
 function publicUser(user: { _id: { toString(): string }; name: string; email: string }) {
   return { id: user._id.toString(), name: user.name, email: user.email };
@@ -29,11 +30,17 @@ export async function login(input: unknown) {
   const user = await findUserByEmail(normalizeEmail(data.email));
   const valid = await verifyPassword(user?.passwordHash ?? await getDummyHash(), data.password);
   if (!user || !valid) throw new AppError({ category: "UNAUTHENTICATED", message: "Invalid email or password." });
-  return { user: publicUser(user), hasWedding: false, session: await createSession(user._id.toString()) };
+  const context = await getWeddingContext(user._id.toString());
+  return { user: publicUser(user), hasWedding: Boolean(context.wedding), session: await createSession(user._id.toString()) };
 }
-export async function currentAccount() {
+export async function authenticatedAccount() {
   const session = await readSession();
   if (!session) return null;
   const user = await findUserById(session.userId.toString());
-  return user ? { user: publicUser(user), sessionId: session._id.toString(), membership: null, wedding: null } : null;
+  if (!user) return null;
+  return { user: publicUser(user), sessionId: session._id.toString() };
+}
+export async function currentAccount() {
+  const account = await authenticatedAccount();
+  return account ? { ...account, ...await getWeddingContext(account.user.id) } : null;
 }

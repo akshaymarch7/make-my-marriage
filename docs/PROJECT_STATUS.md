@@ -9,17 +9,19 @@ System Design, Database Design, and API Design documents.
 
 ## Current position
 
-The scaffold, public homepage, and account authentication are implemented.
-Signup and login lead to a protected welcome screen backed by MongoDB sessions.
-Homepage illustrations still use sample data. Wedding onboarding and management
-remain future work. The user confirmed authentication testing and code review
-are complete on 2026-09-10. Development continues one feature at a time.
+The scaffold, public homepage, authentication, and wedding onboarding are
+implemented. Signup and login now lead to onboarding or the wedding overview,
+depending on membership. Homepage illustrations still use sample data; the
+wedding overview uses saved data. The user accepted authentication on 2026-09-10.
+The user accepted wedding onboarding and its review fixes on 2026-09-10.
+Development continues one feature at a time.
 
 | Milestone | Status | Recorded on |
 | --- | --- | --- |
 | Application scaffold | Complete — foundation only | 2026-09-10 |
 | Public homepage | Complete — UI with mock data | 2026-09-10 |
 | Account authentication | Complete — account scope tested and reviewed | 2026-09-10 |
+| Wedding onboarding and overview | Complete — implemented scope accepted | 2026-09-10 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -165,9 +167,9 @@ asserting the original creation date of earlier work.
   deletion, cookie clearing, and rejection of the revoked session. The temporary
   verification account was removed.
 
-- Wedding membership has not been implemented. `hasWedding` is currently false;
-  `/me` returns null membership and wedding. Connect these to the membership
-  module when wedding onboarding is built.
+- Follow-up on 2026-09-10: wedding onboarding now supplies real membership and
+  wedding context. Login reports actual `hasWedding`; `/me` returns the role and
+  a wedding summary. `/welcome` redirects to onboarding or the overview.
 - Password reset/email delivery and email verification are not part of this
   increment. Passwords must be 12–128 characters when signing up.
 - `NEXT_PUBLIC_APP_URL` must match the browser origin exactly. Set an HTTPS URL
@@ -188,12 +190,93 @@ asserting the original creation date of earlier work.
   sign in; signup intentionally does not require a multi-document transaction.
 - No production deployment was performed.
 
+## 4. Wedding onboarding and overview
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-10
+
+### Design references
+
+The user approved these screens in Stitch project `5169674594013355245`:
+
+- “V1 — Wedding Onboarding — Desktop” (`488c0256e8f3409d83b923fc63d2bd6b`).
+- “V1 — Wedding Onboarding — Mobile” (`87876a92da0942249fb60a7814e48fec`).
+- “V1 — Wedding Overview — Desktop” (`0437561737dd4e3e846f84bc08dc41e5`).
+- “V1 — Wedding Overview — Mobile” (`0307d6983d9d4361a4a7fede90490c9a`).
+
+### Implemented
+
+- `/onboarding`: responsive single-page form for required names, calendar date,
+  and manual location; optional title/description; selectable time zone defaulting
+  to Asia/Kolkata. Title suggestion, inline errors, first-invalid-field focus,
+  disabled submitting state, retry messaging, and retained values after failures.
+- `/dashboard`: saved names/title, wedding date, time-zone-aware countdown,
+  location, time zone, description, signed-in user and role, and sign out. This is
+  the initial overview, not the future aggregate management dashboard.
+- Thin authenticated `POST /api/wedding` and `GET /api/wedding` routes with strict
+  body/query validation, origin checks, and no-store responses.
+- Wedding and initial Admin membership created in a MongoDB transaction. Unique
+  membership indexes enforce one wedding per user, including concurrent requests.
+- Unique stable website slug with collision handling; stable high-entropy gallery
+  share secret, omitted from ordinary responses. API Design section 108 and
+  AGENTS.md explicitly supersede the older database `gallery.tokenHash` field:
+  the implementation stores `gallery.token` with a unique index and hidden selection.
+- Auth routing reflects membership, and other tabs refresh when a wedding is
+  created. Logout authenticates independently of wedding availability.
+- Review follow-up on 2026-09-10: onboarding has its own session boundary. An
+  expired session keeps the form mounted and disables submission, with a sign-in
+  link that opens another tab. Reauthentication as the same user resumes the
+  retained draft; a different user or an existing wedding unmounts it before
+  navigation. Identity is rechecked before submitting. Overview pages retain
+  their normal expired-session redirect behaviour.
+- Local fonts/logo and decorative SVG arches. Stitch state-example boards become
+  real form states; unbuilt footer links and promises about future features are
+  omitted. No user wedding details are prefilled with the design's sample data.
+
+### Validation
+
+- Latest verification: 58 tests, lint, and TypeScript checks passed. Production
+  Webpack build passed. Five additional real React component tests cover draft
+  retention on focus expiry, same-user recovery, different-user clearing, expiry
+  during submission, pre-submit identity checks, and network-failure recovery.
+  `happy-dom` was added as a development-only dependency to test mounted form
+  state, rather than relying on mocked React hooks for this regression.
+- Live development checks passed for routing, invalid input, concurrent creation
+  (one wedding and one Admin membership), duplicate rejection, slug collisions,
+  cross-user isolation, omission of share secrets, persisted overview data,
+  membership after logout/login, and unauthenticated protection. Temporary users,
+  weddings, memberships, and sessions were removed after verification.
+- Desktop and mobile layouts checked using rendered responses from the temporary
+  accounts, with no horizontal overflow. The visual preview used static responses;
+  it does not substitute for interactive browser acceptance testing.
+- On 2026-09-10, the user accepted this increment after reviewing the feature
+  and the session-expiry draft-retention fix, and authorized committing and
+  pushing it to GitHub. Earlier pending acceptance work is closed.
+
+### Boundaries
+
+- Requires MongoDB Atlas or a replica set for transactions; no standalone-server
+  fallback that could leave an orphan wedding.
+- Onboarding drafts stay only in the original tab's React state. Reloading,
+  closing, or deliberately navigating away from the tab discards the draft;
+  nothing is persisted to browser storage. The expiry notice explains this.
+- Dates are stored as `YYYY-MM-DD`, with a named time zone. Past dates are permitted
+  and receive a “Celebrated … ago” label; today gets a wedding-day label.
+- Website starts unpublished with the Classic theme. Gallery, guest uploads, and
+  livestream start disabled. These are initial settings, not implemented features.
+- Wedding editing, cover uploads, Places autocomplete, member invitations, and
+  aggregate dashboard metrics remain separate increments. No `/api/dashboard`
+  aggregation or future feature routes were added.
+- This milestone is delivered through the local development preview. Publishing
+  the source to GitHub does not constitute a production deployment.
+
 ## Upcoming development
 
-The next suggested increment is wedding onboarding and the real
-dashboard, member management, events, tasks, guests/invitations/RSVP, expenses
-and vendors, wedding websites/livestream, and gallery sharing. These remain
-future work; confirm the next small feature with the user before beginning it.
+Choose the next small increment: wedding editing or
+member invitations, followed by events, tasks, guests/invitations/RSVP, expenses
+and vendors, wedding websites/livestream, and gallery sharing. Dashboard summaries
+can grow as those features become available. Confirm each increment before work.
 
 ## Updating this document
 

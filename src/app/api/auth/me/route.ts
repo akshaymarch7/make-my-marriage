@@ -8,6 +8,9 @@ export async function GET(request: Request) {
     validateAuthRequest(request);
     const account = await currentAccount();
     if (!account) throw new AppError({ category: "UNAUTHENTICATED", message: "Please sign in." });
-    return successResponse({ user: account.user, membership: account.membership, wedding: account.wedding });
+    const wedding = account.wedding;
+    return successResponse({ user: account.user, membership: account.membership, wedding: wedding ? {
+      id: wedding.id, brideName: wedding.brideName, groomName: wedding.groomName, weddingDate: wedding.weddingDate,
+    } : null });
   });
 }
