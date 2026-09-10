@@ -13,6 +13,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Treat `docs/PRD.md`, `docs/SYSTEM_DESIGN.md`, `docs/DATABASE_DESIGN.md`, and
   `docs/API_DESIGN.md` as the source of truth. Point out contradictions instead
   of silently creating a new convention.
+- Read `docs/PROJECT_STATUS.md` before starting development to understand what
+  is implemented and what remains. Keep it updated in the same change whenever
+  a major feature is added or materially changed: record its status, date,
+  implemented scope, validation, and remaining work or limitations. Preserve
+  milestone history, distinguish mock UI from working backend features, and
+  never mark unverified or partial work as complete. This document tracks
+  progress; it does not override the four product and design documents above.
 - Keep `src/app` limited to routing, layouts, pages, and thin HTTP/UI entry
   points. Route Handlers authenticate, authorize, validate, call a service,
   and map the result to HTTP.
