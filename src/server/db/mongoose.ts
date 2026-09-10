@@ -3,6 +3,7 @@ import "server-only";
 import mongoose, { type Mongoose } from "mongoose";
 
 import { getDatabaseEnv } from "@/config/env";
+import { AppError } from "@/server/http/app-error";
 
 type MongooseCache = {
   connection: Mongoose | null;
@@ -26,12 +27,15 @@ export async function connectToDatabase(): Promise<Mongoose> {
   }
 
   if (!cache.promise) {
-    const { MONGODB_DB_NAME, MONGODB_URI } = getDatabaseEnv();
+    let env;
+    try { env = getDatabaseEnv(); }
+    catch { throw new AppError({ category: "EXTERNAL_SERVICE_ERROR", message: "Account service is not configured." }); }
+    const { MONGODB_DB_NAME, MONGODB_URI } = env;
     cache.promise = mongoose
-      .connect(MONGODB_URI, { dbName: MONGODB_DB_NAME })
-      .catch((error: unknown) => {
+      .connect(MONGODB_URI, { dbName: MONGODB_DB_NAME, serverSelectionTimeoutMS: 5000 })
+      .catch(() => {
         cache.promise = null;
-        throw error;
+        throw new AppError({ category: "EXTERNAL_SERVICE_ERROR", message: "Account service is temporarily unavailable. Please try again." });
       });
   }
 

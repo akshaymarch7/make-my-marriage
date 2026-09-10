@@ -1,19 +1,12 @@
 'use client';
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Icon } from './icon';
 import { themes, wedding, type Theme } from './home-data';
 
 export function PlanningButton({ children = 'Start Planning', className = 'button button-primary', signIn = false }: { children?: React.ReactNode; className?: string; signIn?: boolean }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  return <><button className={className} onClick={() => dialog.current?.showModal()}>{children}</button>
-    <dialog ref={dialog} className="home-dialog" aria-label={signIn ? "Sign in availability" : "Start planning availability"} onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
-      <button className="dialog-close" aria-label="Close" onClick={() => dialog.current?.close()}><Icon name="close"/></button>
-      <span className="icon-tile"><Icon name="heart" size={28}/></span><p className="eyebrow">Your wedding starts here</p>
-      <h2>{signIn ? 'Your workspace is on its way.' : 'Something lovely is coming.'}</h2>
-      <p>{signIn ? 'Sign in will be available when wedding accounts open.' : 'Wedding accounts aren’t open just yet. Explore what you’ll be able to plan, share and celebrate together.'}</p>
-      <button className="button button-primary" onClick={() => { dialog.current?.close(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }}>Explore the features <Icon name="arrow"/></button>
-    </dialog></>;
+  return <Link className={className} href={signIn ? '/login' : '/signup'}>{children}</Link>;
 }
 export function Header() {
   const [open, setOpen] = useState(false);

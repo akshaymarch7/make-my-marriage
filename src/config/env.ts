@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { AppError } from "@/server/http/app-error";
 
 const databaseEnvSchema = z.object({
   MONGODB_URI: z.string().min(1),
@@ -26,6 +27,10 @@ export function getDatabaseEnv(): DatabaseEnv {
 }
 
 export function getAuthEnv(): AuthEnv {
-  cachedAuthEnv ??= authEnvSchema.parse(process.env);
+  if (!cachedAuthEnv) {
+    const result = authEnvSchema.safeParse(process.env);
+    if (!result.success) throw new AppError({ category: "EXTERNAL_SERVICE_ERROR", message: "Account service is not configured." });
+    cachedAuthEnv = result.data;
+  }
   return cachedAuthEnv;
 }
