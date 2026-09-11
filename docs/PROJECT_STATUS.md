@@ -1,6 +1,6 @@
 # Make My Marriage — Project Status
 
-**Last updated:** 2026-09-11
+**Last updated:** 2026-09-12
 
 This is the ongoing record of major development milestones. Read it before
 starting development and update it whenever a major feature is implemented or
@@ -17,6 +17,10 @@ depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved data. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
 Development continues one feature at a time.
+On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
+role changes, and member removal, and authorized committing and pushing the
+source to GitHub. The implemented scope includes concurrent last-Admin protection.
+Production email configuration remains an operational requirement.
 
 | Milestone | Status | Recorded on |
 | --- | --- | --- |
@@ -25,6 +29,8 @@ Development continues one feature at a time.
 | Account authentication | Complete — account scope tested and reviewed | 2026-09-10 |
 | Wedding onboarding and overview | Complete — implemented scope accepted | 2026-09-10 |
 | Wedding detail editing | Complete — implemented scope accepted | 2026-09-11 |
+| Wedding member invitations | Complete — implemented scope accepted | 2026-09-12 |
+| Member roles and removal | Complete — implemented scope accepted | 2026-09-12 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -350,10 +356,163 @@ The user approved these screens in Stitch project `5169674594013355245`:
 - Cover uploads, Places autocomplete, invitations, and aggregate dashboard
   metrics remain separate features. No production deployment was performed.
 
+## 6. Wedding member invitations
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-11
+
+### Design references
+
+Approved screens in Stitch project `5169674594013355245`:
+
+- “V1 — Wedding Members” (`79a70c7a2fe14665a4098b88c6f2abe5`), including the
+  nested Invite Wedding Member and Revoke Wedding Invitation dialogs.
+- “V1 — Accept Wedding Invitation” (`544de539d95e466eab35e831427bf579`).
+- Implemented responsive website layouts; design state-switcher controls and
+  unbuilt footer links are omitted. Existing application logo/fonts are reused.
+
+### Implemented
+
+- Admin-only `/settings/members`, linked from the signed-in wedding header.
+  Lists real member names/emails/roles and pending invitations; shows the current
+  user, empty/loading/retry states, invite dialog, revoke confirmation, and
+  success feedback. Failed sends retain entered email and role.
+- Member listing API permits Admin and Manager reads, per API Design. Invitation
+  administration and its UI remain Admin-only, per the PRD. Role editing and
+  removal of existing members are outside this increment.
+- Follow-up on 2026-09-12: role editing and member removal are implemented in
+  milestone 7, reusing the Members page and dialog styling.
+- Thin member-list, invitation-create/list/revoke, public invitation-read, and
+  acceptance endpoints. All mutations check origin; routes validate bodies,
+  queries, and parameters, authenticate where required, and return no-store
+  responses. Wedding scope is derived from membership.
+- Normalized email, Admin/Manager roles, seven-day expiry, HMAC-SHA-256 token
+  hashes, and a unique pending invitation per wedding/email. Existing members
+  and duplicate pending invitations receive clear errors. Replacement invites
+  revoke expired pending records to release the unique index.
+- Immediate Resend delivery through server-side fetch with a bounded timeout and
+  per-invitation idempotency key. No new dependency, queue, or SDK was added.
+  Missing email configuration fails before inserting an invitation; failed or
+  uncertain delivery revokes that attempt so an Admin can retry.
+- `/member-invitations/:token` shows only invited email, role, couple names, and
+  wedding date. Includes signed-out, matching-account, wrong-email, existing
+  wedding, accepting, success, invalid/revoked/expired/already-accepted, and retry
+  states. Session changes are rechecked on focus and cross-tab signals.
+- Login/signup preserve an allowlisted invitation return path. Switching from the
+  wrong account signs out first. Acceptance is explicit and verifies normalized
+  email, current membership, link status/expiry, and wedding existence.
+- Manual-testing follow-up on 2026-09-12: signed-out recipients now see Create an
+  account to join first, with Already have an account? Sign in alongside it.
+  Login and signup prefill email from the validated invitation record, preserve
+  the return destination, and use invitation-specific copy. Login explains that
+  receiving an invitation does not create an account. No account-existence lookup
+  is used to choose the email link or reveal registration status.
+- Membership creation and invitation acceptance commit atomically; unique user
+  membership prevents concurrent joins to different weddings. Revocation and
+  acceptance use conditional writes, so revoked links cannot grant access.
+- Tokens are omitted from ordinary API responses and browser storage. Local
+  request logs suppress invitation paths/auth return URLs, and invitation/auth
+  pages send a no-referrer policy.
+
+### Validation
+
+- 123 tests passed, including mounted React UI tests, API boundaries, invitation
+  authorization/validation, public projection, email-adapter failure handling,
+  retry behaviour, and invitation return-path validation. The five opt-in database
+  tests are skipped by the ordinary test command and were run separately.
+- Signup-guidance follow-up on 2026-09-12: 129 tests, TypeScript, lint, and the
+  production Webpack build passed. New tests cover invitation-derived email
+  prefill, safe handling of stale links, signup-first actions, retained guidance
+  after failed login, and return to acceptance after signup or sign-in. The
+  unchanged database integration tests were not rerun for this UI/auth change.
+- All five live MongoDB integration tests passed with mocked email: concurrent
+  duplicate invitations, tenant isolation, email mismatch, revocation, Manager
+  permissions, simultaneous acceptance, attempts to join two weddings, expiry,
+  replacement invitations, and failed-send cleanup/retry. Temporary data removed.
+- TypeScript, lint, and the production Webpack build passed.
+- Static fixtures rendered from the real React components checked at desktop and
+  mobile widths for member lists, invitation/revocation dialogs, and acceptance.
+  No horizontal overflow observed in the checked mobile previews. These checks
+  do not claim interactive acceptance testing against a real mailbox.
+
+### Remaining setup and boundaries
+
+- At initial implementation, Resend was not configured locally. Follow-up on
+  2026-09-12: the user reported receiving an invitation email, then encountered
+  confusion signing in before creating an account. The UI follow-up addresses
+  that path. The user subsequently accepted the feature on 2026-09-12.
+- `NEXT_PUBLIC_APP_URL` must be accessible to recipients; localhost links cannot
+  be used from another person's device. Configure production access logs and
+  analytics to redact invitation secrets before deploying publicly.
+- A provider timeout can occur after an email was accepted by Resend; a delayed
+  message from a failed attempt may contain a revoked link. A process crash after
+  inserting the invitation can leave it pending; an Admin can revoke and retry.
+  There is no durable email job or automatic retry in this single-email flow.
+- On 2026-09-12, the user accepted the feature and authorized publishing the
+  source to GitHub. No production deployment was performed.
+- During testing, the configured sender used resend.dev, which restricts ordinary
+  recipients to the Resend account email. Sending to other users requires a
+  verified owned domain. Delivery beyond that testing restriction has not been
+  verified in this session; generic provider-error handling remains unchanged.
+
+## 7. Member roles and removal
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-12
+
+### Implemented
+
+- Current member rows offer Change role and Remove member; the current user's
+  removal action is labelled Leave wedding. Dialogs show the target name/email,
+  explain permissions or access loss, require confirmation, disable pending
+  actions, and retain errors for retry. The role selector starts with the current
+  role and prevents an unchanged save.
+- Admin-only `PATCH /api/members/:membershipId` and
+  `DELETE /api/members/:membershipId`, with strict validation, origin checks,
+  authenticated identity, and no-store responses. Targets are scoped by ID and
+  the acting user's wedding; cross-wedding targets return NOT_FOUND.
+- The last Admin cannot be demoted or removed. UI controls explain this rule;
+  the database enforces it even with stale UI and simultaneous requests. Both
+  operations first increment the Wedding's internal `__v` in a transaction,
+  recheck the acting Admin's membership, then inspect/mutate the target and count
+  Admins. This shared write prevents snapshot write-skew between different targets.
+- Removal deletes only membership, leaving the user's account intact. Subsequent
+  wedding requests use fresh membership and deny access. The user can be invited
+  again. Self-removal opens onboarding; self-demotion returns to the overview.
+- Session synchronization now detects changed membership roles as well as wedding
+  and user identity. Old Admin content is hidden on revalidation before refresh;
+  focus and cross-tab signals update open tabs. No real-time push was introduced.
+
+### Validation
+
+- Focused UI tests cover last-Admin controls, confirmation before removal, failure
+  retention, self-demotion, and self-removal. API tests cover authentication,
+  origin/parameter/query/body validation, identity forwarding, and no-store
+  responses. Service tests cover role validation, ownership scoping, and Manager
+  rejection; session tests cover hiding stale Admin controls.
+- All 140 ordinary tests, TypeScript, lint, and the production Webpack build
+  passed. The nine opt-in database tests were run separately, as recorded below.
+- All nine live MongoDB integration tests passed, including the five invitation
+  regressions and new checks for promotion/demotion, last-Admin errors, target
+  isolation, removal/access loss, and concurrent self-demotions, self-removals,
+  and mutual demotions. Each race preserved one Admin; stale acting Admin
+  permission was rejected. Temporary data was removed and email was mocked.
+
+### Boundaries
+
+- On 2026-09-12, the user accepted this increment and authorized committing and
+  pushing it. Open tabs discover remote changes on revalidation; already-rendered
+  content is not remotely erased.
+- Existing invitations and the wedding itself are not deleted by member removal.
+  This increment does not add guest management, ownership transfer, or audit logs.
+- No production deployment was performed.
+
 ## Upcoming development
 
-Consider member invitations as the next small
-increment, followed by events, tasks, guests/invitations/RSVP, expenses
+Member management is accepted. Consider events as the next increment, then
+tasks, guests/invitations/RSVP, expenses
 and vendors, wedding websites/livestream, and gallery sharing. Dashboard summaries
 can grow as those features become available. Confirm each increment before work.
 

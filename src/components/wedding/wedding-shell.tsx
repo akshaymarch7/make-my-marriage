@@ -16,6 +16,7 @@ export function WeddingShell({ children, user, weddingId, role, editing = false 
       <header className={styles.header}><div className={styles.headerInner}>
         <Link href="/" aria-label="Make My Marriage home"><Image src="/images/make-my-marriage-logo.svg" alt="Make My Marriage" width={220} height={55} priority/></Link>
         <div className={styles.account}>
+          {role === "ADMIN" && <Link className={styles.membersLink} href="/settings/members">Wedding members</Link>}
           {role && <div className={styles.identity}><span className={styles.userName} title={user.name}>{user.name}</span><span className={styles.role}>{role === "ADMIN" ? "Admin" : "Manager"}</span></div>}
           <LogoutButton className={styles.signOut}/>
         </div>
@@ -27,5 +28,5 @@ export function WeddingShell({ children, user, weddingId, role, editing = false 
   if (editing) return <WeddingDraftSession key={`${user.id}:${weddingId}`} userId={user.id} weddingId={weddingId}><UnsavedChanges>{content}</UnsavedChanges></WeddingDraftSession>;
   return weddingId === null
     ? <WeddingDraftSession key={user.id} userId={user.id}>{content}</WeddingDraftSession>
-    : <SessionSync userId={user.id} weddingId={weddingId}>{content}</SessionSync>;
+    : <SessionSync userId={user.id} weddingId={weddingId} role={role}>{content}</SessionSync>;
 }

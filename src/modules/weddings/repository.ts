@@ -45,3 +45,11 @@ export async function patchWedding(weddingId: string, changes: UpdateWeddingInpu
   const result = await Wedding.updateOne({ _id: weddingId, deletedAt: null }, { $set: set }, { runValidators: true });
   return result.matchedCount > 0;
 }
+
+// Serialize membership reductions on a shared Wedding write. Counting Admins
+// alone in separate snapshot transactions permits concurrent last-Admin loss.
+export async function lockWeddingMemberships(weddingId: string, session: ClientSession) {
+  objectIdSchema.parse(weddingId);
+  const result = await Wedding.updateOne({ _id: weddingId, deletedAt: null }, { $inc: { __v: 1 } }, { session });
+  return result.matchedCount > 0;
+}

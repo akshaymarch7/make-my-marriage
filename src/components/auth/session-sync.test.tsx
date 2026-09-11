@@ -19,6 +19,13 @@ async function mount() {
   cleanup = mocks.effects[0]();
   await vi.waitFor(() => expect(mocks.setHidden).toHaveBeenCalledWith(false));
 }
+it("hides stale Admin content when the current membership role changes", async () => {
+  vi.mocked(fetch).mockResolvedValue({ status: 200, ok: true, json: async () => ({ data: { user: { id: "user" }, wedding: { id: "wedding" }, membership: { role: "MANAGER" } } }) } as Response);
+  SessionSync({ userId: "user", weddingId: "wedding", role: "ADMIN", children: "admin controls" });
+  cleanup = mocks.effects[0]();
+  await vi.waitFor(() => expect(mocks.setHidden).toHaveBeenCalledWith(true));
+  expect(mocks.refresh).toHaveBeenCalled();
+});
 it("hides stale content and navigates away when another tab logs out", async () => {
   await mount();
   vi.mocked(fetch).mockResolvedValue({ status: 401 } as Response);

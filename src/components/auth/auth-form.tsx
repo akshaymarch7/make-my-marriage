@@ -6,7 +6,7 @@ import styles from "./auth.module.css";
 import { notifySessionChange } from "./session-events";
 import { useUnsavedChanges } from "@/components/wedding/unsaved-changes";
 
-export function AuthForm({ mode }: { mode: "signup" | "login" }) {
+export function AuthForm({ mode, returnTo, invitedEmail }: { mode: "signup" | "login"; returnTo?: string; invitedEmail?: string }) {
   const router = useRouter();
   const signup = mode === "signup";
   const [pending, setPending] = useState(false);
@@ -26,17 +26,18 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
         return;
       }
       notifySessionChange();
-      router.replace(result.data.hasWedding ? "/dashboard" : "/onboarding"); router.refresh();
+      router.replace(returnTo ?? (result.data.hasWedding ? "/dashboard" : "/onboarding")); router.refresh();
     } catch { setError("We couldn’t connect. Please try again."); }
     finally { setPending(false); }
   }}>
+    {returnTo && !signup && <p className={styles.switch}>First time here? <Link href={`/signup?next=${encodeURIComponent(returnTo)}`}>Create an account to join</Link>. Receiving an invitation doesn’t create an account for you.</p>}
     {signup && <label>Your name<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Your full name" disabled={pending}/></label>}
-    <label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="you@example.com" disabled={pending}/></label>
+    <label>Email address<input name="email" type="email" autoComplete="email" defaultValue={invitedEmail ?? ""} required maxLength={254} placeholder="you@example.com" disabled={pending}/></label>
     <label>Password<span className={styles.password}><input name="password" type={visible ? "text" : "password"} autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 12 : 1} maxLength={128} aria-describedby={signup ? "password-hint" : undefined} disabled={pending}/><button type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}>{visible ? "Hide" : "Show"}</button></span></label>
     {signup && <p id="password-hint" className={styles.hint}>Use at least 12 characters. Spaces are welcome.</p>}
     <div role="alert" className={styles.error}>{error}</div>
     <button className={styles.primary} disabled={pending} type="submit">{pending ? "One moment…" : signup ? "Create your account →" : "Sign in →"}</button>
-    <p className={styles.switch}>{signup ? "Already have an account?" : "New to Make My Marriage?"} <Link href={signup ? "/login" : "/signup"}>{signup ? "Sign in" : "Create an account"}</Link></p>
+    <p className={styles.switch}>{signup ? "Already have an account?" : "New to Make My Marriage?"} <Link href={`${signup ? "/login" : "/signup"}${returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""}`}>{signup ? "Sign in" : "Create an account"}</Link></p>
   </form>;
 }
 export function LogoutButton({ className }: { className?: string }) {

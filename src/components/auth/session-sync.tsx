@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { watchSessionChanges } from "./session-events";
 
-export function SessionSync({ children, userId, weddingId }: { children: ReactNode; userId: string; weddingId?: string | null }) {
+export function SessionSync({ children, userId, weddingId, role }: { children: ReactNode; userId: string; weddingId?: string | null; role?: string }) {
   const router = useRouter();
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
@@ -22,7 +22,7 @@ export function SessionSync({ children, userId, weddingId }: { children: ReactNo
         } else if (response.ok) {
           const result = await response.json();
           if (request.signal.aborted) return;
-          if (result.data.user.id !== userId || (weddingId !== undefined && (result.data.wedding?.id ?? null) !== weddingId)) { setHidden(true); router.refresh(); }
+          if (result.data.user.id !== userId || (weddingId !== undefined && (result.data.wedding?.id ?? null) !== weddingId) || (role !== undefined && result.data.membership?.role !== role)) { setHidden(true); router.refresh(); }
           else { setHidden(false); if (refresh) router.refresh(); }
         }
       } catch { /* A network failure does not establish that a session has ended. */ }
@@ -30,6 +30,6 @@ export function SessionSync({ children, userId, weddingId }: { children: ReactNo
     const stop = watchSessionChanges(() => { void check(true); });
     void check();
     return () => { stop(); controller?.abort(); };
-  }, [router, userId, weddingId]);
+  }, [router, userId, weddingId, role]);
   return hidden ? <p role="status">Updating your session…</p> : children;
 }
