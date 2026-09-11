@@ -1,5 +1,5 @@
-import { currentAccount } from "@/modules/auth/service";
-import { createWedding } from "@/modules/weddings/service";
+import { currentAccount, authenticatedAccount } from "@/modules/auth/service";
+import { createWedding, updateWedding } from "@/modules/weddings/service";
 import { authBoundary, validateAuthRequest, readAuthBody } from "@/server/auth/http";
 import { AppError } from "@/server/http/app-error";
 import { successResponse } from "@/server/http/responses";
@@ -19,5 +19,14 @@ export async function GET(request: Request) {
     if (!account) throw new AppError({ category: "UNAUTHENTICATED", message: "Please sign in." });
     if (!account.wedding) throw new AppError({ category: "NOT_FOUND", message: "Create your wedding first." });
     return successResponse(account.wedding);
+  });
+}
+
+export async function PATCH(request: Request) {
+  return authBoundary(async () => {
+    validateAuthRequest(request);
+    const account = await authenticatedAccount();
+    if (!account) throw new AppError({ category: "UNAUTHENTICATED", message: "Please sign in." });
+    return successResponse(await updateWedding(account.user.id, await readAuthBody(request)));
   });
 }

@@ -3,11 +3,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoutButton } from "@/components/auth/auth-form";
 import { SessionSync } from "@/components/auth/session-sync";
-import { OnboardingSession } from "./onboarding-session";
+import { WeddingDraftSession } from "./draft-session";
+import { UnsavedChanges } from "./unsaved-changes";
 import styles from "./wedding.module.css";
 
-export function WeddingShell({ children, user, weddingId, role }: {
-  children: ReactNode; user: { id: string; name: string }; weddingId: string | null; role?: string;
+export function WeddingShell({ children, user, weddingId, role, editing = false }: {
+  children: ReactNode; user: { id: string; name: string }; weddingId: string | null; role?: string; editing?: boolean;
 }) {
   const content = (
     <div className={styles.shell}>
@@ -23,7 +24,8 @@ export function WeddingShell({ children, user, weddingId, role }: {
       <footer className={styles.footer}>© {new Date().getFullYear()} Make My Marriage. All rights reserved.</footer>
     </div>
   );
+  if (editing) return <WeddingDraftSession key={`${user.id}:${weddingId}`} userId={user.id} weddingId={weddingId}><UnsavedChanges>{content}</UnsavedChanges></WeddingDraftSession>;
   return weddingId === null
-    ? <OnboardingSession key={user.id} userId={user.id}>{content}</OnboardingSession>
+    ? <WeddingDraftSession key={user.id} userId={user.id}>{content}</WeddingDraftSession>
     : <SessionSync userId={user.id} weddingId={weddingId}>{content}</SessionSync>;
 }

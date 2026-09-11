@@ -93,6 +93,32 @@
 .errorPage { min-height: 100svh; display: grid; place-items: center; background: #faf7f2; padding: 24px; }
 .errorPage > section { max-width: 560px; }
 .backHome { display: block; text-align: center; font-size: 13px; margin-top: 24px; color: #6b1d2f; }
+.editPage { width: 100%; max-width: 1280px; margin: 0 auto; padding: 48px; }
+.backLink { display: inline-block; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.editPage > h1 { font: 500 38px/1.2 var(--font-playfair), Georgia, serif; margin: 0 0 12px; }
+.editGrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: start; }
+.editActions { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
+.editActions > span { margin-right: auto; color: var(--muted); font-size: 11px; }
+.editActions .submit { width: auto; }
+.submit:disabled { opacity: .5; cursor: default; }
+.secondary { border: 1px solid #d9d1c5; padding: 12px 18px; min-height: 46px; border-radius: 8px; background: white; color: #35262b; font: inherit; font-size: 13px; cursor: pointer; }
+.secondary:disabled { opacity: .5; cursor: wait; }
+.discardDialog { padding: 32px; border: 1px solid #e8e2d9; border-radius: 16px; background: #fffaf8; max-width: min(460px, calc(100vw - 32px)); color: #35262b; margin: auto; }
+.discardDialog::backdrop { background: #24101580; }
+.discardDialog h2 { font: 500 28px/1.3 var(--font-playfair), Georgia, serif; margin: 0 0 12px; }
+.discardDialog p { font-size: 14px; color: #6b655e; margin: 0 0 24px; }
+.discardDialog > div { display: flex; gap: 12px; }
+.discardDialog .submit { width: auto; }
+.editLink { display: inline-block; border: 1px solid #d9d1c5; padding: 12px 20px; border-radius: 8px; color: #6b1d2f; font-size: 13px; margin-top: 24px; background: white; }
+.savedNotice { color: #2b5a33; background: #f3f7f2; border: 1px solid #d2e3d0; border-radius: 8px; padding: 12px; font-size: 13px; margin: 0 0 24px; }
+@media (max-width: 700px) {
+  .editPage { padding: 28px 20px 48px; }
+  .editPage > h1 { font-size: 30px; }
+  .editGrid { grid-template-columns: minmax(0, 1fr); }
+  .editActions { flex-wrap: wrap; }
+  .editActions > span { flex-basis: 100%; }
+  .editActions .submit { flex: 1; }
+}
 @media (max-width: 1000px) {
   .headerInner { padding-inline: 24px; }
   .onboarding { gap: 28px; padding: 40px 24px 56px; }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./auth.module.css";
 import { notifySessionChange } from "./session-events";
+import { useUnsavedChanges } from "@/components/wedding/unsaved-changes";
 
 export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const router = useRouter();
@@ -40,9 +41,10 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
 }
 export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
+  const guard = useUnsavedChanges();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  return <div><button className={className ?? styles.primary} disabled={pending} onClick={async () => {
+  const signOut = async () => {
     setPending(true); setError("");
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
@@ -50,5 +52,6 @@ export function LogoutButton({ className }: { className?: string }) {
       else setError("We couldn’t sign you out. Please try again.");
     } catch { setError("We couldn’t connect. Please try again."); }
     finally { setPending(false); }
-  }}>{pending ? "Signing out…" : "Sign out"}</button><p role="alert" className={styles.error}>{error}</p></div>;
+  };
+  return <div><button className={className ?? styles.primary} disabled={pending} onClick={() => guard ? guard.leave(() => { void signOut(); }) : void signOut()}>{pending ? "Signing out…" : "Sign out"}</button><p role="alert" className={styles.error}>{error}</p></div>;
 }

@@ -8,13 +8,13 @@ type Status = "active" | "checking" | "expired" | "unavailable" | "changed";
 type Session = { status: Status; revalidate: () => Promise<boolean>; expire: () => void };
 const Context = createContext<Session | null>(null);
 
-export function useOnboardingSession() {
+export function useWeddingDraftSession() {
   const session = useContext(Context);
-  if (!session) throw new Error("Onboarding requires its session boundary.");
+  if (!session) throw new Error("Wedding form requires its session boundary.");
   return session;
 }
 
-export function OnboardingSession({ userId, children }: { userId: string; children: ReactNode }) {
+export function WeddingDraftSession({ userId, weddingId = null, children }: { userId: string; weddingId?: string | null; children: ReactNode }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("checking");
   const controller = useRef<AbortController | null>(null);
@@ -33,7 +33,7 @@ export function OnboardingSession({ userId, children }: { userId: string; childr
       if (!response.ok) { setStatus("unavailable"); return false; }
       const result = await response.json();
       if (request.signal.aborted) return false;
-      if (result.data.user.id !== userId || result.data.wedding) {
+      if (result.data.user.id !== userId || (result.data.wedding?.id ?? null) !== weddingId) {
         // Unmount the draft before refreshing into a different account or wedding.
         setStatus("changed");
         router.refresh();
@@ -45,7 +45,7 @@ export function OnboardingSession({ userId, children }: { userId: string; childr
       if (!request.signal.aborted) setStatus("unavailable");
       return false;
     }
-  }, [router, userId]);
+  }, [router, userId, weddingId]);
 
   useEffect(() => {
     let mounted = true;
@@ -60,8 +60,8 @@ export function OnboardingSession({ userId, children }: { userId: string; childr
   </Context.Provider>;
 }
 
-export function OnboardingSessionNotice() {
-  const { status, revalidate } = useOnboardingSession();
+export function WeddingDraftNotice() {
+  const { status, revalidate } = useWeddingDraftSession();
   if (status === "active" || status === "changed") return null;
   return <div className={styles.saveError} role="status">
     {status === "checking" ? "Checking your session…" : <>

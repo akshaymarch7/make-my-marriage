@@ -4,17 +4,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from './icon';
 import { themes, wedding, type Theme } from './home-data';
+import { useHomeSession } from './home-session';
 
 export function PlanningButton({ children = 'Start Planning', className = 'button button-primary', signIn = false }: { children?: React.ReactNode; className?: string; signIn?: boolean }) {
+  const session = useHomeSession();
+  if (session !== 'signed-out') {
+    if (signIn) return null;
+    return <Link className={className} href={session === 'wedding' ? '/dashboard' : '/onboarding'}>{session === 'wedding' ? 'Go to your wedding' : 'Continue setup'}</Link>;
+  }
   return <Link className={className} href={signIn ? '/login' : '/signup'}>{children}</Link>;
 }
 export function Header() {
   const [open, setOpen] = useState(false);
+  const session = useHomeSession();
   return <header className="site-header" onKeyDown={e => { if (e.key === "Escape") setOpen(false); }}><div className="header-inner">
     <a href="#top" aria-label="Make My Marriage home"><Image src="/images/make-my-marriage-logo.svg" alt="Make My Marriage — Wedding Workspace" width={240} height={60} className="brand-logo" priority/></a>
     <nav aria-label="Main navigation" className="desktop-nav"><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#themes">Themes</a></nav>
     <div className="header-actions"><PlanningButton signIn className="text-button">Sign In</PlanningButton><PlanningButton/><button className="menu-toggle" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}><Icon name={open ? 'close' : 'menu'}/></button></div>
-    {open && <nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation">{[['Features','features'],['How it works','how-it-works'],['Themes','themes']].map(([label,id]) => <a key={id} href={`#${id}`} onClick={() => setOpen(false)}>{label}</a>)}<PlanningButton signIn className="text-button">Sign In</PlanningButton></nav>}
+    {open && <nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation">{[['Features','features'],['How it works','how-it-works'],['Themes','themes']].map(([label,id]) => <a key={id} href={`#${id}`} onClick={() => setOpen(false)}>{label}</a>)}<PlanningButton signIn={session === 'signed-out'} className="text-button">Sign In</PlanningButton></nav>}
   </div></header>;
 }
 export function ThemeCards() {

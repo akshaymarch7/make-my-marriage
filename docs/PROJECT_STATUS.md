@@ -1,6 +1,6 @@
 # Make My Marriage — Project Status
 
-**Last updated:** 2026-09-10
+**Last updated:** 2026-09-11
 
 This is the ongoing record of major development milestones. Read it before
 starting development and update it whenever a major feature is implemented or
@@ -9,8 +9,10 @@ System Design, Database Design, and API Design documents.
 
 ## Current position
 
-The scaffold, public homepage, authentication, and wedding onboarding are
-implemented. Signup and login now lead to onboarding or the wedding overview,
+The scaffold, public homepage, authentication, wedding onboarding, and wedding
+detail editing are implemented. The user accepted the editing increment and
+follow-up fixes and authorized publishing the source on 2026-09-11.
+Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved data. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
@@ -22,6 +24,7 @@ Development continues one feature at a time.
 | Public homepage | Complete — UI with mock data | 2026-09-10 |
 | Account authentication | Complete — account scope tested and reviewed | 2026-09-10 |
 | Wedding onboarding and overview | Complete — implemented scope accepted | 2026-09-10 |
+| Wedding detail editing | Complete — implemented scope accepted | 2026-09-11 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -80,6 +83,13 @@ asserting the original creation date of earlier work.
 - Three local wedding-theme preview dialogs.
 - Originally, Start Planning and Sign In opened availability messages. These
   were replaced by working account links in the authentication milestone.
+- Follow-up on 2026-09-11: homepage actions now reflect the current session on
+  the initial server render. Signed-out visitors retain Sign In/Start Planning;
+  signed-in visitors see Continue setup or Go to your wedding. Desktop header,
+  mobile menu, hero, and final planning actions share this state. Existing
+  session-change, focus, visibility, and page-restoration listeners revalidate
+  actions without redirecting away from the homepage. Network failures retain
+  the last known state.
 - Homepage components under `src/components/home`; local illustrative data in
   `src/components/home/home-data.ts`; thin page entry in `src/app/page.tsx`.
 - Removed design content outside V1, including accommodation, transport,
@@ -89,6 +99,11 @@ asserting the original creation date of earlier work.
 
 - Lint and TypeScript checks passed during implementation.
 - Final production build passed using `npm run build:webpack`.
+- Homepage session follow-up: all 87 tests, lint, TypeScript, and the Webpack
+  production build passed. Focused tests cover server-provided initial states,
+  desktop/mobile actions, cross-tab login/logout, wedding creation, network
+  failure, and listener cleanup. The user accepted this follow-up and authorized
+  committing and pushing it on 2026-09-11.
 - Browser checks covered desktop and small-screen layouts, horizontal overflow,
   image loading, section navigation, mobile menu behaviour, planning messages,
   and theme dialogs. No browser warnings or errors were observed in that check.
@@ -268,13 +283,77 @@ The user approved these screens in Stitch project `5169674594013355245`:
 - Wedding editing, cover uploads, Places autocomplete, member invitations, and
   aggregate dashboard metrics remain separate increments. No `/api/dashboard`
   aggregation or future feature routes were added.
+- Follow-up on 2026-09-11: wedding editing is implemented in milestone 5. Creation
+  and editing now share the wedding-details form and draft session boundary;
+  onboarding retains its existing expiry and account-switch protection.
 - This milestone is delivered through the local development preview. Publishing
   the source to GitHub does not constitute a production deployment.
 
+## 5. Wedding detail editing
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-11
+
+### Implemented
+
+- Based on the user-approved “V1 — Edit Wedding” screen
+  (`5a07cbd146ca4f49bdce1ced27d86d71`) in Stitch project
+  `5169674594013355245`, with a responsive layout matching onboarding.
+- Overview links to `/wedding/edit`, prefilled with saved names, date, location,
+  optional title/description, and time zone. Includes title suggestion, optional
+  text clearing, validation, save progress, retry errors, and a saved confirmation
+  on return to the overview.
+- Authenticated `PATCH /api/wedding` permits Admin and Manager membership roles,
+  derives wedding ownership from the current membership, and validates partial
+  updates. The design's Admin-only wording is adjusted to match API permissions.
+- The form sends only changed fields. API location patches preserve omitted
+  nested fields; changing the manual location in the form explicitly clears
+  obsolete structured address/coordinate metadata. Slug and gallery token stay
+  unchanged and are not editable through this endpoint.
+- Cancel, in-app navigation, and sign out confirm before discarding changes.
+  Refresh/close use the browser's native warning; the overview enters editing
+  through document navigation so browser Back also crosses that boundary.
+- Session expiry retains and disables the mounted draft. Signing in as the same
+  user in another tab resumes editing; changing identity or wedding clears the
+  form before navigation. Saving rechecks identity. Other overview tabs refresh
+  saved details on session-change signals or focus.
+- Review fix on 2026-09-11: the overview keys its countdown by wedding date and
+  time zone so refreshed details reset the countdown immediately. Regression
+  tests update both fields without remounting the overview or advancing timers.
+
+### Validation
+
+- All 79 tests, lint, TypeScript, and the production Webpack build passed.
+  Tests cover partial validation, membership authorization, missing weddings,
+  real form state, changed-field submissions, failure retention, discard guards,
+  and session expiry/recovery. Existing onboarding and authentication tests pass.
+- Live development API checks verified persisted updates, optional text clearing,
+  nested field preservation, Admin/Manager access, unauthenticated rejection,
+  wedding isolation, protected-field rejection, and unchanged slug/gallery token.
+  Saved edit and overview responses were checked. Temporary test data was removed.
+- Desktop and mobile static response previews checked for layout and horizontal
+  overflow. These checks and component tests do not replace manual interactive
+  acceptance testing. On 2026-09-11, the user accepted this increment and its
+  review fixes and authorized committing and pushing the source to GitHub.
+- Final regression verification after the countdown fix: all 89 tests,
+  TypeScript, and lint passed. The production Webpack build also passed for the
+  final increment before publication.
+
+### Boundaries
+
+- Drafts remain in memory in the original tab; there is no recovery after a
+  confirmed reload, close, or departure. Native unload warnings depend on browser
+  support and user interaction.
+- Concurrent updates use last-write-wins for each submitted field; there is no
+  version conflict interface in this increment.
+- Cover uploads, Places autocomplete, invitations, and aggregate dashboard
+  metrics remain separate features. No production deployment was performed.
+
 ## Upcoming development
 
-Choose the next small increment: wedding editing or
-member invitations, followed by events, tasks, guests/invitations/RSVP, expenses
+Consider member invitations as the next small
+increment, followed by events, tasks, guests/invitations/RSVP, expenses
 and vendors, wedding websites/livestream, and gallery sharing. Dashboard summaries
 can grow as those features become available. Confirm each increment before work.
 

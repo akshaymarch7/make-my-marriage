@@ -28,3 +28,14 @@ export const createWeddingSchema = z.object({
 }).strict();
 
 export type CreateWeddingInput = z.infer<typeof createWeddingSchema>;
+
+export const updateWeddingSchema = createWeddingSchema.extend({
+  timeZone: timeZoneSchema,
+  location: z.object({
+    formattedAddress: optionalText(300), city: optionalText(100), state: optionalText(100), country: optionalText(100),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
+    googlePlaceId: optionalText(300),
+  }).strict().refine(value => Object.keys(value).length > 0, "Provide a location change."),
+}).partial().refine(value => Object.keys(value).length > 0, "Provide at least one change.");
+export type UpdateWeddingInput = z.infer<typeof updateWeddingSchema>;

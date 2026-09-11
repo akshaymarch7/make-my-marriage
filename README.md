@@ -24,6 +24,11 @@ After signing in, users without a wedding reach `/onboarding`. Creating a weddin
 also creates their Admin membership and opens `/dashboard`, the initial wedding
 overview. The old `/welcome` URL redirects to the appropriate destination.
 
+Admins and Managers can open **Edit wedding** from the overview to update saved
+details at `/wedding/edit`. Saving returns to the overview with a confirmation.
+Unsaved changes receive a discard warning; expired sessions retain the form while
+the same user signs in in another tab. Drafts are held only in that tab's memory.
+
 ## Commands
 
 ```bash
@@ -56,7 +61,7 @@ switching are checked across component updates rather than mocked hook calls.
 `server/auth` owns lower-level authentication mechanisms such as password
 hashing, session cookies, and token utilities.
 
-`modules/weddings` owns wedding creation and reading. `modules/memberships`
+`modules/weddings` owns wedding creation, reading, and partial updates. `modules/memberships`
 owns the membership records that determine wedding access. Creation writes both
 records in one transaction, with a unique user membership enforced by MongoDB.
 

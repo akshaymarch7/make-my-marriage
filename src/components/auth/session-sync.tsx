@@ -8,7 +8,7 @@ export function SessionSync({ children, userId, weddingId }: { children: ReactNo
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
     let controller: AbortController | undefined;
-    const check = async () => {
+    const check = async (refresh = false) => {
       controller?.abort();
       const request = new AbortController();
       controller = request;
@@ -23,11 +23,11 @@ export function SessionSync({ children, userId, weddingId }: { children: ReactNo
           const result = await response.json();
           if (request.signal.aborted) return;
           if (result.data.user.id !== userId || (weddingId !== undefined && (result.data.wedding?.id ?? null) !== weddingId)) { setHidden(true); router.refresh(); }
-          else setHidden(false);
+          else { setHidden(false); if (refresh) router.refresh(); }
         }
       } catch { /* A network failure does not establish that a session has ended. */ }
     };
-    const stop = watchSessionChanges(() => { void check(); });
+    const stop = watchSessionChanges(() => { void check(true); });
     void check();
     return () => { stop(); controller?.abort(); };
   }, [router, userId, weddingId]);

@@ -1,7 +1,7 @@
 import "server-only";
 import type { ClientSession } from "mongoose";
 import { Wedding } from "./wedding.model";
-import type { CreateWeddingInput } from "./schemas";
+import type { CreateWeddingInput, UpdateWeddingInput } from "./schemas";
 import { connectToDatabase } from "@/server/db/mongoose";
 import { objectIdSchema } from "@/server/db/object-id";
 
@@ -30,4 +30,18 @@ export async function findWedding(weddingId: string) {
     gallery: { isEnabled: wedding.gallery!.isEnabled, guestUploadsEnabled: wedding.gallery!.guestUploadsEnabled },
     livestream: { youtubeUrl: wedding.livestream!.youtubeUrl, isEnabled: wedding.livestream!.isEnabled },
   };
+}
+
+export async function patchWedding(weddingId: string, changes: UpdateWeddingInput) {
+  objectIdSchema.parse(weddingId);
+  await connectToDatabase();
+  const set: Record<string, unknown> = {};
+  for (const [field, value] of Object.entries(changes)) {
+    if (value === undefined) continue;
+    if (field === "location") {
+      for (const [key, item] of Object.entries(value)) if (item !== undefined) set[`location.${key}`] = item;
+    } else set[field] = value;
+  }
+  const result = await Wedding.updateOne({ _id: weddingId, deletedAt: null }, { $set: set }, { runValidators: true });
+  return result.matchedCount > 0;
 }

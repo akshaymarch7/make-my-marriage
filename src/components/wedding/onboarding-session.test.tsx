@@ -2,8 +2,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { OnboardingSession } from "./onboarding-session";
-import { OnboardingForm } from "./onboarding-form";
+import { WeddingDraftSession } from "./draft-session";
+import { WeddingDetailsForm } from "./wedding-details-form";
 
 const mocks = vi.hoisted(() => ({ router: { refresh: vi.fn(), replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
@@ -28,7 +28,7 @@ beforeEach(async () => {
   }));
   container = document.createElement("div"); document.body.append(container);
   root = createRoot(container);
-  await act(async () => { root.render(<OnboardingSession userId="owner"><OnboardingForm/></OnboardingSession>); });
+  await act(async () => { root.render(<WeddingDraftSession userId="owner"><WeddingDetailsForm/></WeddingDraftSession>); });
 });
 afterEach(async () => {
   await act(async () => root.unmount());
@@ -79,7 +79,7 @@ it("unmounts the old user's draft on different-user reauthentication", async () 
   expect(container.textContent).not.toContain("Our wedding draft");
   expect(mocks.router.refresh).toHaveBeenCalled();
   expect(weddingRequests()).toHaveLength(0);
-  await act(async () => { root.render(<OnboardingSession key="other" userId="other"><OnboardingForm/></OnboardingSession>); });
+  await act(async () => { root.render(<WeddingDraftSession key="other" userId="other"><WeddingDetailsForm/></WeddingDraftSession>); });
   expect(input("title").value).toBe("");
   expect(input("brideName").value).toBe("");
 });
