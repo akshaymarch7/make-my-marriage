@@ -1,6 +1,6 @@
 # Make My Marriage — Project Status
 
-**Last updated:** 2026-09-12
+**Last updated:** 2026-09-16
 
 This is the ongoing record of major development milestones. Read it before
 starting development and update it whenever a major feature is implemented or
@@ -14,13 +14,18 @@ detail editing are implemented. The user accepted the editing increment and
 follow-up fixes and authorized publishing the source on 2026-09-11.
 Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
-wedding overview uses saved data. The user accepted authentication on 2026-09-10.
+wedding overview uses saved wedding details and members, with explicitly labelled
+sample planning previews in the new workspace skeleton. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
-Development continues one feature at a time.
+Development continues one feature at a time. On 2026-09-16, the user accepted
+the V1 workspace skeleton after testing and code review and authorized committing
+and pushing it. Planning previews remain sample data.
 On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
 role changes, and member removal, and authorized committing and pushing the
 source to GitHub. The implemented scope includes concurrent last-Admin protection.
-Production email configuration remains an operational requirement.
+The user has confirmed the app is live on Vercel, database connectivity and
+invitation emails are working, and a custom domain is configured. These are
+user-reported production results, not an independent production audit.
 
 | Milestone | Status | Recorded on |
 | --- | --- | --- |
@@ -31,6 +36,8 @@ Production email configuration remains an operational requirement.
 | Wedding detail editing | Complete — implemented scope accepted | 2026-09-11 |
 | Wedding member invitations | Complete — implemented scope accepted | 2026-09-12 |
 | Member roles and removal | Complete — implemented scope accepted | 2026-09-12 |
+| Initial Vercel deployment and custom domain | Live — confirmed by user | 2026-09-15 |
+| Wedding workspace skeleton | Complete — implemented scope accepted | 2026-09-15 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -509,12 +516,70 @@ Approved screens in Stitch project `5169674594013355245`:
   This increment does not add guest management, ownership transfer, or audit logs.
 - No production deployment was performed.
 
+## 8. Initial production deployment
+
+**Status:** Live — confirmed by user
+
+**Recorded on:** 2026-09-15
+
+- The user deployed the app to Vercel and confirmed working database connections,
+  invitation email delivery, and the production application. A custom domain is
+  now configured; its address has not been supplied in this conversation.
+- Deployment troubleshooting covered the exact application origin setting,
+  Atlas network access, and hosted Resend configuration. The user reported
+  allowing all IP addresses in Atlas to resolve connectivity.
+- Earlier milestone statements about no deployment describe their delivery at
+  that time and are superseded by this deployment milestone. This entry records
+  user confirmation; no independent production audit or new test run is claimed.
+- Existing public-launch limitations, including shared authentication rate limits
+  and sample homepage claims, remain documented above. Future development and
+  database resets must be isolated from production data.
+
+## 9. Wedding workspace skeleton
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-15
+
+- Adapted the Stitch wedding workspace design to V1: shared desktop sidebar,
+  mobile navigation drawer, account header, and dashboard. Wedding editing and
+  member management now use the same shell; onboarding retains its existing flow.
+- Wedding identity, date, time zone, location, description, countdown, and member
+  names come from saved data. Member lookups use the existing authenticated,
+  wedding-scoped service; only names, IDs, and roles reach the dashboard.
+- Navigation includes events, tasks, guests, invitations/RSVP, expenses, selected
+  vendors, vendor discovery, website, gallery, guest QR, and livestream. Unbuilt
+  sections open an accessible Coming soon dialog. No future routes, APIs, or
+  persistence layers were created.
+- Dashboard summaries, event/task previews, RSVP distribution, and expenses are
+  clearly labelled sample data. They do not write records or send invitations.
+  Existing edit and Admin-only member-management links remain functional.
+- Excluded non-V1 design features, including seating/room allocation, transport,
+  WhatsApp concierge, budget allocation, vendor contract management, and exports.
+- All 144 ordinary tests, lint, TypeScript, and the production Webpack build passed.
+  Tests include role-aware navigation, every placeholder dialog, mobile drawer
+  transitions, absence of placeholder network requests, real/sample separation,
+  and refreshed countdown behaviour. Nine opt-in database tests were not run.
+- Desktop and mobile presentation checked using an isolated rendering of the
+  actual components with fixture data. The local authenticated browser session
+  was unavailable during that visual check. After restarting the local dev server
+  with updated environment values, the user confirmed login worked; server logs
+  showed successful login, dashboard, and session responses. On 2026-09-16, the
+  user confirmed testing and code review passed and accepted the feature.
+- On 2026-09-16, removed the repetitive wedding-name card from the desktop
+  sidebar and mobile navigation at the user’s request. Wedding names remain
+  in the dashboard heading.
+- TypeScript and the three workspace tests also passed after the sidebar change.
+- The user authorized committing and pushing this increment on 2026-09-16.
+  No production deployment verification is claimed; connected Vercel deployments
+  may be triggered by the GitHub push.
+
 ## Upcoming development
 
-Member management is accepted. Consider events as the next increment, then
-tasks, guests/invitations/RSVP, expenses
-and vendors, wedding websites/livestream, and gallery sharing. Dashboard summaries
-can grow as those features become available. Confirm each increment before work.
+The workspace skeleton is accepted. Plan events as the next increment, including
+responsive designs for the list, create/edit form, and archive confirmation. Replace its dashboard preview with saved events when that feature is
+ready. Follow with tasks, guests/invitations/RSVP, expenses and vendors, wedding
+website/livestream, and gallery sharing, confirming each increment before work.
 
 ## Updating this document
 

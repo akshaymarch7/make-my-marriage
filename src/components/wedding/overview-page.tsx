@@ -1,32 +1,33 @@
+import Link from "next/link";
 import type { getWeddingContext } from "@/modules/weddings/service";
 import { daysUntilWedding, weddingDateLabel } from "@/modules/weddings/dates";
 import { WeddingCountdown } from "./countdown";
-import { WeddingArch } from "./arch";
 import { timeZoneLabel } from "./time-zones";
 import { Icon } from "@/components/home/icon";
-import styles from "./wedding.module.css";
+import { FeaturePreviewButton } from "@/components/workspace/feature-preview";
+import { sampleEvents, sampleStats, sampleTasks } from "@/components/workspace/sample-data";
+import styles from "@/components/workspace/workspace.module.css";
 
 type Wedding = NonNullable<Awaited<ReturnType<typeof getWeddingContext>>["wedding"]>;
-export function OverviewPage({ wedding, updated = false }: { wedding: Wedding; updated?: boolean }) {
+export type WorkspaceMember = { id: string; name: string; role: string };
+export function OverviewPage({ wedding, updated = false, members = [], role }: { wedding: Wedding; updated?: boolean; members?: WorkspaceMember[]; role?: string }) {
   const location = wedding.location.formattedAddress || [wedding.location.city, wedding.location.state, wedding.location.country].filter(Boolean).join(", ");
-  return <main id="wedding-content" className={styles.overview}>
-    <div className={styles.overviewInner}>
-      {updated && <p role="status" className={styles.savedNotice}>Wedding details updated</p>}
-      <p className={styles.ready}><span aria-hidden="true">✓</span> Your wedding is ready</p>
-      <div className={styles.smallArch}><WeddingArch compact/></div>
-      {wedding.title && <p className={styles.weddingTitle}>{wedding.title}</p>}
-      <h1>{wedding.brideName} <span>&amp;</span> {wedding.groomName}</h1>
-      <div className={styles.dateRow}><span className={styles.dateBadge}><Icon name="calendar" size={17}/><time dateTime={wedding.weddingDate}>{weddingDateLabel(wedding.weddingDate)}</time></span><span className={styles.dot} aria-hidden="true">•</span><span className={styles.countdown}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><WeddingCountdown key={`${wedding.weddingDate}:${wedding.timeZone}`} date={wedding.weddingDate} timeZone={wedding.timeZone} initialDays={daysUntilWedding(wedding.weddingDate, wedding.timeZone)}/></span></div>
-      <section className={styles.details} aria-label="Your wedding details">
-        <dl className={styles.detailsGrid}>
-          <div className={styles.detail}><span className={styles.detailIcon}><Icon name="location" size={18}/></span><div><dt>Wedding city / location</dt><dd>{location}</dd></div></div>
-          <div className={styles.detail}><span className={styles.detailIcon}><Icon name="globe" size={18}/></span><div><dt>Time zone</dt><dd>{timeZoneLabel(wedding.timeZone)}</dd></div></div>
-        </dl>
-        {wedding.description && <div className={styles.description}><h2>Description</h2><p>{wedding.description}</p></div>}
-      </section>
-      <p className={styles.endNote}>A quiet, dedicated atelier crafted for your celebration.</p>
-      {/* A document navigation lets native beforeunload also protect browser Back from the edit page. */}
-      <a className={styles.editLink} href="/wedding/edit">Edit wedding</a>
-    </div>
+  return <main id="wedding-content" className={styles.dashboard}>
+    {updated && <p role="status" className={styles.savedNotice}>Wedding details updated</p>}
+    <section className={styles.hero} aria-label="Your wedding details">
+      <div className={styles.heroTop}><p className={styles.eyebrow}>Your celebration, beautifully organised</p><span className={styles.countdown}><Icon name="calendar" size={16}/><WeddingCountdown key={`${wedding.weddingDate}:${wedding.timeZone}`} date={wedding.weddingDate} timeZone={wedding.timeZone} initialDays={daysUntilWedding(wedding.weddingDate, wedding.timeZone)}/></span></div>
+      <div className={styles.heroMain}><div>{wedding.title && <p className={styles.muted}>{wedding.title}</p>}<h1>{wedding.brideName} <em>&amp;</em> {wedding.groomName}</h1><div className={styles.weddingMeta}><span><Icon name="calendar" size={15}/><time dateTime={wedding.weddingDate}>{weddingDateLabel(wedding.weddingDate)}</time></span>{location && <span><Icon name="location" size={15}/>{location}</span>}<span><Icon name="globe" size={15}/>{timeZoneLabel(wedding.timeZone)}</span></div>{wedding.description && <p className={styles.description}>{wedding.description}</p>}</div><a href="/wedding/edit" className={styles.outline}>Edit wedding details <Icon name="arrow" size={14}/></a></div>
+      <div className={styles.collaborators}><span className={styles.eyebrow}>Planning together</span><div className={styles.people}>{members.slice(0, 4).map(member => <span key={member.id} className={styles.person} title={`${member.name} · ${member.role === "ADMIN" ? "Admin" : "Manager"}`}><span className={styles.avatar} aria-hidden="true">{member.name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join("")}</span>{member.name}</span>)}{members.length > 4 && <span className={styles.muted}>+{members.length - 4} more</span>}</div>{role === "ADMIN" && <Link href="/settings/members" className={styles.textLink}>Manage wedding members →</Link>}</div>
+    </section>
+    <div className={styles.previewNotice}><Icon name="sparkle" size={20}/><div><strong>Your workspace is taking shape</strong><p>The planning sections below show sample data. Your wedding details and members above are real. We’ll connect each section as its feature becomes available.</p></div></div>
+    <section aria-label="Sample planning summaries" className={styles.statGrid}>{sampleStats.map(stat => <article className={styles.statCard} key={stat.feature}><div className={styles.statTop}><Icon name={stat.icon} size={19}/><span className={styles.sampleLabel}>Sample</span></div><p>{stat.label}</p><strong>{stat.value}</strong><small>{stat.detail}</small><FeaturePreviewButton feature={stat.feature} className={styles.textLink}>Coming soon <span aria-hidden="true">→</span></FeaturePreviewButton></article>)}</section>
+    <div className={styles.dashboardGrid}><div className={styles.mainColumn}>
+      <section className={styles.panel}><div className={styles.panelHead}><div><p className={styles.sampleLabel}>Sample data — preview</p><h2>Your celebrations</h2></div><FeaturePreviewButton feature="events" className={styles.textLink}>Explore events →</FeaturePreviewButton></div><p className={styles.muted}>Every moment, with a place in your plans.</p><div className={styles.eventList}>{sampleEvents.map(event => <article className={styles.event} key={event.name}><div className={styles.eventDay}><small>DAY</small><strong>{event.day}</strong></div><div><h3>{event.name}</h3><p>{event.time} <span aria-hidden="true">·</span> {event.venue}</p><span className={styles.attire}>{event.attire}</span></div><Icon name="arrow" size={16}/></article>)}</div></section>
+      <section className={styles.panel}><div className={styles.panelHead}><div><p className={styles.sampleLabel}>Sample data — preview</p><h2>A little closer to “I do”</h2></div><FeaturePreviewButton feature="tasks" className={styles.textLink}>Explore tasks →</FeaturePreviewButton></div><p className={styles.muted}>A preview of how your next steps will come together.</p>{sampleTasks.map((task, index) => <div className={styles.task} key={task}><span className={styles.taskCircle} aria-hidden="true"/><div><h3>{task}</h3><p>{index === 1 ? "Wedding Admin" : "Family member"}</p></div><span className={styles.taskStatus}>To do</span></div>)}</section>
+    </div><div className={styles.sideColumn}>
+      <section className={styles.panel}><p className={styles.sampleLabel}>Sample data — preview</p><h2>Who’s celebrating?</h2><div className={styles.rsvp}><div className={styles.ring} role="img" aria-label="Sample RSVP: 112 attending, 20 declined, 54 awaiting response"><div><strong>132</strong><span>responses</span></div></div><div className={styles.legend}><p><i/>Attending <strong>112</strong></p><p><i/>Declined <strong>20</strong></p><p><i/>Awaiting <strong>54</strong></p></div></div><FeaturePreviewButton feature="invitations" className={styles.textLink}>Explore invitations & RSVP →</FeaturePreviewButton></section>
+      <section className={styles.panel}><p className={styles.sampleLabel}>Sample data — preview</p><h2>Wedding expenses</h2><p className={styles.expenseTotal}>₹12,45,000 <small>Total expenses</small></p>{[["Venue", "₹6,50,000"], ["Decorations", "₹2,80,000"], ["Photography", "₹1,75,000"], ["Catering", "₹90,000"], ["Entertainment", "₹50,000"]].map(([name, amount]) => <div className={styles.expense} key={name}><span>{name}</span><strong>{amount}</strong></div>)}<FeaturePreviewButton feature="expenses" className={styles.textLink}>Explore expenses →</FeaturePreviewButton></section>
+      <section className={`${styles.panel} ${styles.sharing}`}><Icon name="heart" size={23}/><h2>A celebration worth sharing</h2><p className={styles.muted}>Your wedding website, photo memories, guest QR sharing and livestream will find a home here.</p><div>{(["website", "gallery", "qr", "livestream"] as const).map((feature, index) => <FeaturePreviewButton key={feature} feature={feature} className={styles.outline}>{["Wedding website", "Gallery", "Guest QR", "Livestream"][index]} <span className={styles.sampleLabel}>Soon</span></FeaturePreviewButton>)}</div></section>
+    </div></div>
   </main>;
 }

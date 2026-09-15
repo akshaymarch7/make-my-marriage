@@ -6,6 +6,7 @@ import { SessionSync } from "@/components/auth/session-sync";
 import { WeddingDraftSession } from "./draft-session";
 import { UnsavedChanges } from "./unsaved-changes";
 import styles from "./wedding.module.css";
+import { WorkspaceFrame } from "@/components/workspace/workspace-frame";
 
 export function WeddingShell({ children, user, weddingId, role, editing = false }: {
   children: ReactNode; user: { id: string; name: string }; weddingId: string | null; role?: string; editing?: boolean;
@@ -25,8 +26,9 @@ export function WeddingShell({ children, user, weddingId, role, editing = false 
       <footer className={styles.footer}>© {new Date().getFullYear()} Make My Marriage. All rights reserved.</footer>
     </div>
   );
-  if (editing) return <WeddingDraftSession key={`${user.id}:${weddingId}`} userId={user.id} weddingId={weddingId}><UnsavedChanges>{content}</UnsavedChanges></WeddingDraftSession>;
+  const workspace = <WorkspaceFrame user={user} role={role}>{children}</WorkspaceFrame>;
+  if (editing) return <WeddingDraftSession key={`${user.id}:${weddingId}`} userId={user.id} weddingId={weddingId}><UnsavedChanges>{workspace}</UnsavedChanges></WeddingDraftSession>;
   return weddingId === null
     ? <WeddingDraftSession key={user.id} userId={user.id}>{content}</WeddingDraftSession>
-    : <SessionSync userId={user.id} weddingId={weddingId} role={role}>{content}</SessionSync>;
+    : <SessionSync userId={user.id} weddingId={weddingId} role={role}>{workspace}</SessionSync>;
 }

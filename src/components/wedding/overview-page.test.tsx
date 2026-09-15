@@ -35,3 +35,15 @@ it.each([
   expect(container.textContent).toContain(expected);
   expect(container.textContent).not.toContain("3 days to go");
 });
+
+it("separates saved wedding members from labelled sample planning content", async () => {
+  await act(async () => root.render(<OverviewPage wedding={wedding} members={[{ id: "member", name: "Actual member", role: "ADMIN" }]} role="ADMIN"/>));
+  const details = container.querySelector('[aria-label="Your wedding details"]')!;
+  expect(details.textContent).toContain("Actual member");
+  expect(details.textContent).not.toContain("Sample");
+  expect(container.textContent).toContain("The planning sections below show sample data");
+  expect(container.querySelector('[aria-label="Sample planning summaries"]')?.textContent).toContain("Sample");
+  expect(container.querySelector('a[href="/settings/members"]')).not.toBeNull();
+  await act(async () => root.render(<OverviewPage wedding={wedding} role="MANAGER"/>));
+  expect(container.querySelector('a[href="/settings/members"]')).toBeNull();
+});

@@ -1,3 +1,4 @@
+import { listMembers } from "@/modules/memberships/service";
 import { redirect } from "next/navigation";
 import { currentAccount } from "@/modules/auth/service";
 import { WeddingShell } from "@/components/wedding/wedding-shell";
@@ -10,5 +11,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const account = await currentAccount();
   if (!account) redirect("/login");
   if (!account.wedding || !account.membership) redirect("/onboarding");
-  return <WeddingShell user={account.user} weddingId={account.wedding.id} role={account.membership.role}><OverviewPage wedding={account.wedding} updated={query.success && query.data.updated === "1"}/></WeddingShell>;
+  const members = (await listMembers(account.user.id)).map(member => ({ id: member.user.id, name: member.user.name, role: member.role }));
+  return <WeddingShell user={account.user} weddingId={account.wedding.id} role={account.membership.role}><OverviewPage members={members} role={account.membership.role} wedding={account.wedding} updated={query.success && query.data.updated === "1"}/></WeddingShell>;
 }
