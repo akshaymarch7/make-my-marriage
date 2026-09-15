@@ -60,14 +60,14 @@ export function WeddingDraftSession({ userId, weddingId = null, children }: { us
   </Context.Provider>;
 }
 
-export function WeddingDraftNotice() {
+export function WeddingDraftNotice({ detailsLabel = "wedding details" }: { detailsLabel?: string }) {
   const { status, revalidate } = useWeddingDraftSession();
   if (status === "active" || status === "changed") return null;
   return <div className={styles.saveError} role="status">
     {status === "checking" ? "Checking your session…" : <>
       <p>{status === "expired"
-        ? "Your session expired. Sign in in another tab to continue. Your wedding details will stay here."
-        : "We couldn’t verify your session. Check your connection and try again. Your wedding details will stay here."}</p>
+        ? `Your session expired. Sign in in another tab to continue. Your ${detailsLabel} will stay here.`
+        : `We couldn’t verify your session. Check your connection and try again. Your ${detailsLabel} will stay here.`}</p>
       {status === "expired" && <a href="/login" target="_blank" rel="noopener noreferrer">Sign in in another tab ↗</a>}
       <button type="button" className={styles.suggest} onClick={() => { void revalidate(); }}>Check session again</button>
       <p className={styles.draftHint}>Keep this tab open. Refreshing or closing it will discard this draft.</p>

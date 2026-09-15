@@ -41,9 +41,25 @@ it("separates saved wedding members from labelled sample planning content", asyn
   const details = container.querySelector('[aria-label="Your wedding details"]')!;
   expect(details.textContent).toContain("Actual member");
   expect(details.textContent).not.toContain("Sample");
-  expect(container.textContent).toContain("The planning sections below show sample data");
-  expect(container.querySelector('[aria-label="Sample planning summaries"]')?.textContent).toContain("Sample");
+  expect(container.textContent).toContain("Your wedding details, members, and events use saved data");
+  expect(container.querySelector('[aria-label="Planning summaries"]')?.textContent).toContain("Sample");
   expect(container.querySelector('a[href="/settings/members"]')).not.toBeNull();
   await act(async () => root.render(<OverviewPage wedding={wedding} role="MANAGER"/>));
   expect(container.querySelector('a[href="/settings/members"]')).toBeNull();
+});
+
+it("uses saved event counts and chronological upcoming events without archived or past previews", async () => {
+  const base = { type: "CUSTOM" as const, endsAt: null, venueName: "", address: "", description: "", dressCode: "", archivedAt: null };
+  const events = [
+    {...base,id:"later",name:"Later celebration",startsAt:"2027-02-13T10:00:00Z"},
+    {...base,id:"past",name:"Past celebration",startsAt:"2027-02-01T10:00:00Z"},
+    {...base,id:"archived",name:"Archived celebration",startsAt:"2027-02-12T10:00:00Z",archivedAt:"2027-02-01T00:00:00Z"},
+    {...base,id:"next",name:"Next celebration",startsAt:"2027-02-11T10:00:00Z"},
+  ];
+  await act(async () => root.render(<OverviewPage wedding={wedding} events={events}/>));
+  const summary=container.querySelector('[aria-label="Planning summaries"] article')!;
+  expect(summary.textContent).toContain("Wedding events3");expect(summary.textContent).not.toContain("Sample");
+  const links=[...container.querySelectorAll('a[href^="/events/"]')].map(a=>a.textContent);
+  expect(links).toEqual(["Next celebration","Later celebration"]);
+  expect(container.textContent).not.toContain("Archived celebration");expect(container.textContent).not.toContain("Past celebration");
 });

@@ -1120,6 +1120,13 @@ startsAt ASC
 
 Authentication required.
 
+Implementation notes (2026-09-16): Admins and Managers are allowed. `name` and
+`startsAt` are required; `type` is optional, matching the database design.
+Optional text fields can be cleared with an empty string, and `endsAt` with null.
+Timestamps must be ISO date-times with an explicit offset (including Z). If
+present, the end must be strictly after the start. Cover uploads are deferred.
+
+
 ### Request
 
 ```json
@@ -1166,6 +1173,11 @@ _id + currentWeddingId
 Authentication required.
 
 Allows partial updates.
+
+The resulting start/end pair is validated after merging changes. Archived events
+are read-only. A concurrent modification detected during the update returns
+CONFLICT; reload the event before retrying. Client-supplied wedding IDs are rejected.
+
 
 ---
 

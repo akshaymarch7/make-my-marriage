@@ -15,11 +15,14 @@ follow-up fixes and authorized publishing the source on 2026-09-11.
 Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved wedding details and members, with explicitly labelled
-sample planning previews in the new workspace skeleton. The user accepted authentication on 2026-09-10.
+saved event summaries and explicitly labelled sample previews for the remaining
+planning modules. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
 Development continues one feature at a time. On 2026-09-16, the user accepted
 the V1 workspace skeleton after testing and code review and authorized committing
-and pushing it. Planning previews remain sample data.
+and pushing it. On 2026-09-16, the user also accepted Wedding Events after
+manual QA and code review, including the save-error fix, and authorized committing
+and pushing it. Other planning previews remain sample data.
 On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
 role changes, and member removal, and authorized committing and pushing the
 source to GitHub. The implemented scope includes concurrent last-Admin protection.
@@ -38,6 +41,7 @@ user-reported production results, not an independent production audit.
 | Member roles and removal | Complete — implemented scope accepted | 2026-09-12 |
 | Initial Vercel deployment and custom domain | Live — confirmed by user | 2026-09-15 |
 | Wedding workspace skeleton | Complete — implemented scope accepted | 2026-09-15 |
+| Wedding events | Complete — implemented scope accepted | 2026-09-16 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -574,11 +578,66 @@ Approved screens in Stitch project `5169674594013355245`:
   No production deployment verification is claimed; connected Vercel deployments
   may be triggered by the GitHub push.
 
+## 10. Wedding events
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-16
+
+- Retrieved the approved Stitch List, Empty State, and Create screens. Implemented
+  responsive list, creation, details, editing, archive confirmation, and unsaved
+  changes flows in the existing workspace. Details/edit/dialogs follow the same
+  visual language. Prototype controls and features outside V1 were omitted.
+- Admins and Managers can create, list, read, update, and archive events through
+  `/api/events` and `/api/events/:eventId`. Membership determines the wedding;
+  IDs, queries, and bodies are validated. Repositories scope every resource by
+  wedding ID and event ID. Cross-wedding requests return NOT_FOUND.
+- Events support a name, optional preset/custom type, start and optional end,
+  venue, address, description, and dress code. Type remains optional in the API
+  per the database design; the UI defaults to Custom. No cover uploads yet.
+- Dates are stored as UTC instants and entered/displayed in the wedding time zone.
+  Overnight events work. The form rejects nonexistent/ambiguous daylight-saving
+  times rather than silently moving them. Unchanged timestamps retain precision.
+- Lists group by local date and order chronologically. Archived events are hidden
+  by default, optionally visible, and read-only. Archiving preserves records and
+  references; no hard-delete or restore capability was added.
+- Partial edits validate the resulting start/end pair. An atomic version check
+  rejects a concurrent update/archive during saving. The form sends only changed
+  fields. API failures retain input; session expiry retains the draft in the open
+  tab through reauthentication, and account/wedding changes discard it. Drafts
+  are not persisted across closing or refreshing the tab.
+- The sidebar Events link is active. Dashboard event count and upcoming events
+  now use saved data, with a real empty state. Other dashboard modules retain
+  explicitly labelled samples. Existing focus/cross-tab refresh signals update
+  event views and dashboard data.
+- All 174 ordinary tests, TypeScript, lint, and the production Webpack build
+  passed. Coverage includes validation, timezone/DST conversion, tenant-scoped
+  queries, auth/origin boundaries, archive behaviour, concurrent-write guards,
+  partial form updates, draft retention, empty states, and dashboard summaries.
+- Browser checks used the actual components in an isolated in-memory fixture:
+  list, create, details, edit, archive, and unsaved confirmation; desktop/mobile
+  layout and mobile horizontal overflow were checked. No database integration
+  tests or production-data mutations were performed. Nine existing opt-in
+  database tests remain skipped. The user subsequently confirmed that manual QA
+  and code review passed and accepted the implemented feature on 2026-09-16.
+- Save troubleshooting on 2026-09-16: the long-running dev server returned HTML
+  404 responses for `/api/events` despite the route being present in the production
+  build. Restarting it restored the expected JSON authentication response. The form
+  now distinguishes unexpected server responses from connection failures, retains
+  input, and avoids claiming success when no saved event is returned. Nine focused
+  event-form tests, TypeScript, and lint passed after this fix.
+- No new dependencies, uploads, invitations, task/guest/vendor associations, or
+  other future modules were introduced.
+- The user authorized committing and pushing this increment on 2026-09-16.
+  No production deployment verification is claimed; a connected Vercel deployment
+  may be triggered by the GitHub push.
+
 ## Upcoming development
 
-The workspace skeleton is accepted. Plan events as the next increment, including
-responsive designs for the list, create/edit form, and archive confirmation. Replace its dashboard preview with saved events when that feature is
-ready. Follow with tasks, guests/invitations/RSVP, expenses and vendors, wedding
+Wedding Events is accepted. Plan task management next: list/create/edit/delete,
+member assignment, optional event association, due dates, priorities, status,
+filters, and saved dashboard summaries. Finalise responsive Stitch designs before
+implementation. Event cover uploads remain a separate deferred increment. Continue with guests/invitations/RSVP, expenses and vendors, wedding
 website/livestream, and gallery sharing, confirming each increment before work.
 
 ## Updating this document

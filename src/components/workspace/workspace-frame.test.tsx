@@ -23,7 +23,7 @@ it("keeps navigation on existing routes and restricts member management to Admin
   await render();
   const sidebar = container.querySelector("aside")!;
   expect(sidebar.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/dashboard");
-  expect([...sidebar.querySelectorAll("a")].map(a => a.getAttribute("href"))).toEqual(["/", "/dashboard", "/wedding/edit", "/settings/members"]);
+  expect([...sidebar.querySelectorAll("a")].map(a => a.getAttribute("href"))).toEqual(["/", "/dashboard", "/events", "/wedding/edit", "/settings/members"]);
   await render("MANAGER");
   expect(sidebar.querySelector('a[href="/settings/members"]')).toBeNull();
   expect(sidebar.querySelector('a[href="/wedding/edit"]')).not.toBeNull();
@@ -32,8 +32,8 @@ it("opens every V1 placeholder without making a network request", async () => {
   const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
   await render();
   const buttons = [...container.querySelectorAll<HTMLButtonElement>("aside nav button")];
-  expect(buttons).toHaveLength(Object.keys(plannedFeatures).length);
-  for (const [index, feature] of Object.values(plannedFeatures).entries()) {
+  expect(buttons).toHaveLength(Object.keys(plannedFeatures).length - 1);
+  for (const [index, feature] of Object.entries(plannedFeatures).filter(([key]) => key !== "events").map(([, value]) => value).entries()) {
     await act(async () => buttons[index].click());
     const panel = container.querySelector<HTMLDialogElement>('[aria-labelledby="feature-title"]')!;
     expect(panel.open).toBe(true); expect(panel.querySelector("h2")?.textContent).toBe(feature.label);

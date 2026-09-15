@@ -1,0 +1,8 @@
+import type { WeddingEvent } from "@/modules/events/schemas";
+import Link from "next/link";
+import { eventDayLabel, eventTimeRange } from "@/modules/events/dates";
+import { ArchiveEventButton } from "./archive-button";
+import styles from "./events.module.css";
+export function EventDetails({ event, timeZone, userId, weddingId, saved }: { event: WeddingEvent; timeZone: string; userId: string; weddingId: string; saved?: string }) {
+  return <main id="wedding-content" className={`${styles.page} ${styles.detailPage}`}><Link href="/events" className={styles.back}>← Back to events</Link>{saved && <p role="status" className={styles.success}>{saved === "created" ? "Event created." : "Event updated."}</p>}<div className={styles.pageHeading}><div><p className={styles.eyebrow}>{event.type ?? "Custom"}</p><h1>{event.name}</h1>{event.archivedAt && <span className={styles.archivedBadge}>Archived</span>}</div>{!event.archivedAt && <a href={`/events/${event.id}/edit`} className={styles.primary}>Edit event</a>}</div><section className={styles.section}><h2>The celebration</h2><dl className={styles.detailGrid}><div><dt>Date</dt><dd>{eventDayLabel(event.startsAt, timeZone)}</dd></div><div><dt>Time</dt><dd>{eventTimeRange(event.startsAt, event.endsAt, timeZone)}<small>{timeZone}</small></dd></div>{event.venueName && <div><dt>Venue</dt><dd>{event.venueName}</dd></div>}{event.address && <div><dt>Address</dt><dd>{event.address}</dd></div>}{event.dressCode && <div><dt>Dress code</dt><dd>{event.dressCode}</dd></div>}</dl>{event.description && <div className={styles.description}><h2>A note about this event</h2><p>{event.description}</p></div>}</section><ArchiveEventButton event={event} userId={userId} weddingId={weddingId}/></main>;
+}

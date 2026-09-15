@@ -15,7 +15,7 @@ export function WorkspaceFrame({ children, user, role }: { children: ReactNode; 
   const panel = useRef<HTMLDialogElement>(null);
   const [feature, setFeature] = useState<PlannedFeature>("events");
   const featureInfo = plannedFeatures[feature];
-  const section = pathname === "/wedding/edit" ? "Wedding details" : pathname === "/settings/members" ? "Wedding members" : "Dashboard";
+  const section = pathname.startsWith("/events") ? "Events" : pathname === "/wedding/edit" ? "Wedding details" : pathname === "/settings/members" ? "Wedding members" : "Dashboard";
   function openFeature(next: PlannedFeature) {
     drawer.current?.close(); setFeature(next); panel.current?.showModal();
   }
@@ -23,7 +23,7 @@ export function WorkspaceFrame({ children, user, role }: { children: ReactNode; 
     <Link href="/" className={styles.logo} aria-label="Make My Marriage home"><Image src="/images/make-my-marriage-logo.svg" alt="Make My Marriage" width={190} height={48} priority/></Link>
     <nav aria-label="Wedding workspace">
       <Link href="/dashboard" className={styles.navItem} aria-current={pathname === "/dashboard" ? "page" : undefined} onClick={() => drawer.current?.close()}><Icon name="dashboard" size={17}/><span>Dashboard</span></Link>
-      {navigationGroups.map(group => <div className={styles.navGroup} key={group.label}><p>{group.label}</p>{group.features.map(key => <button type="button" className={styles.navItem} key={key} onClick={() => openFeature(key)}><Icon name={plannedFeatures[key].icon} size={17}/><span>{plannedFeatures[key].label}</span><small>Soon</small></button>)}</div>)}
+      {navigationGroups.map(group => <div className={styles.navGroup} key={group.label}><p>{group.label}</p>{group.features.map(key => key === "events" ? <Link key={key} href="/events" className={styles.navItem} aria-current={pathname.startsWith("/events") ? "page" : undefined} onClick={() => drawer.current?.close()}><Icon name="calendar" size={17}/><span>Events</span></Link> : <button type="button" className={styles.navItem} key={key} onClick={() => openFeature(key)}><Icon name={plannedFeatures[key].icon} size={17}/><span>{plannedFeatures[key].label}</span><small>Soon</small></button>)}</div>)}
       <div className={styles.navGroup}><p>Settings</p>
         {/* Keep document entry into editing so browser Back invokes its unload guard. */}
         <a href="/wedding/edit" className={styles.navItem} aria-current={pathname === "/wedding/edit" ? "page" : undefined} onClick={() => drawer.current?.close()}><Icon name="settings" size={17}/><span>Wedding Details</span></a>
