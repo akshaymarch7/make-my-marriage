@@ -33,3 +33,11 @@ export async function archiveEventRecord(weddingId: string, eventId: string) {
   const row = await Event.findOneAndUpdate({ ...await scoped(weddingId, eventId), archivedAt: null }, { $set: { archivedAt: new Date() }, $inc: { __v: 1 } }, { returnDocument: "after" }).lean();
   return row ? project(row) : null;
 }
+
+/** Public invitations can load only the token owner's selected, active events. */
+export async function findInvitedEvents(weddingId: string, eventIds: string[]) {
+  eventIds.forEach(id => objectIdSchema.parse(id));
+  const filter = await scoped(weddingId);
+  if (!eventIds.length) return [];
+  return (await Event.find({ ...filter, _id: { $in: eventIds }, archivedAt: null }).sort({ startsAt: 1, _id: 1 }).lean()).map(project);
+}

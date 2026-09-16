@@ -1523,7 +1523,7 @@ Invitation link immediately becomes invalid.
 
 Generate a cryptographically random, high-entropy `invitationToken` when creating
 the Guest and store it in that document. This lets organisers repeatedly retrieve
-the same invitation URL in a later sharing increment. Use 32 random bytes encoded
+the same invitation URL in the sharing increment. Use 32 random bytes encoded
 as base64url and a unique index. Exclude the secret from default model reads,
 ordinary CRUD projections, logs, and errors.
 
@@ -1537,13 +1537,21 @@ endpoint, public invitation page, email delivery, or RSVP submission. Guest CRUD
 never returns the raw token. Later sharing retrieves the existing secret rather
 than rotating it on each request. Deleting its owner invalidates any future link.
 
+As of 2026-09-16, link retrieval, public invitation viewing, RSVP submission, and
+RSVP summaries (§45, §50–52) are implemented. Guest email delivery, bulk actions
+and reminders (§46–49) remain deferred. Copy/open actions do not mark emails sent.
+
 ---
 
 # 45. Get Guest Invitation Link
 
 ## GET `/api/guests/:guestId/invitation-link`
 
-Authentication required.
+Authentication required. Admin or Manager membership is required; the guest lookup
+uses the membership’s wedding ID. Cross-wedding or missing guests return 404.
+The stable URL uses the configured `NEXT_PUBLIC_APP_URL` origin, never the request
+Host header. Responses are private and not cached. UI supports copy (with a manual
+fallback) and open-in-new-tab; sharing via other apps is manual.
 
 ### Response
 
@@ -1729,7 +1737,7 @@ Resolve Guest
 ↓
 Resolve Wedding
 ↓
-Load only invited Events
+Load only active invited Events from the same Wedding
 ↓
 Return invitation data
 ```
@@ -1749,15 +1757,19 @@ Return invitation data
       "brideName": "Princi",
       "groomName": "Akshay",
       "weddingDate": "2027-02-14",
-      "coverImageUrl": "..."
+      "timeZone": "Asia/Kolkata",
+      "title": "Our celebration",
+      "location": "Jaipur, Rajasthan, India"
     },
     "events": [
       {
         "name": "Wedding",
         "startsAt": "...",
+        "endsAt": null,
         "venueName": "...",
         "address": "...",
-        "dressCode": "..."
+        "dressCode": "...",
+        "description": "..."
       }
     ]
   }
@@ -1776,13 +1788,38 @@ internal notes
 
 ---
 
+### Implemented public boundary (2026-09-16)
+
+`/invite/:token` is a standalone page with no login requirement. Both it and this
+API use generic unavailable states for malformed, missing, or deleted invitations;
+a deleted wedding also makes the link unavailable. The API returns 404.
+Only the explicit fields above are exposed: no database IDs, contact details,
+internal notes, other guests, members, or unrelated sharing tokens. Events are
+filtered by owner wedding, invitation event IDs, and `archivedAt: null`.
+The approved floral artwork is a local decorative asset; cover uploads are deferred.
+Responses are no-store; public routes have no-referrer and noindex headers/metadata.
+Token-bearing routes are excluded from Next application incoming request logging.
+The UI retains unsaved RSVP choices after retryable failures and refreshes on focus
+or cross-tab signals. No response deadline or invitation expiry is introduced.
+
+---
+
 # 51. Submit RSVP
 
 ## POST `/api/public/invitations/:token/rsvp`
 
 No authentication.
 
-Rate limited.
+Rate limited: a shared ceiling of 300 submissions/minute and 20 submissions per
+invitation per 15-minute fixed window. Counters reuse the existing MongoDB rate
+limit mechanism with HMAC-derived keys; raw invitation secrets are not stored in
+counter IDs. Malformed input and disallowed origins are rejected before counters.
+The invitation service resolves an existing guest and active wedding and validates
+capacity before quota consumption. The per-invitation counter is consumed first;
+only attempts admitted by it consume the shared counter. Nonexistent/deleted links
+and per-invitation rejections therefore cannot exhaust the shared quota. Identical
+repeat responses remain rate limited even though they do not rewrite the RSVP.
+Requests use the configured application origin and strict JSON/query validation.
 
 ### Request — Attending
 
@@ -1824,7 +1861,12 @@ attendingCount = 0
 }
 ```
 
-The same endpoint may be used later to modify RSVP.
+The same endpoint may be used later to modify RSVP. One response applies to the
+whole guest group. Repeating the current status/count is idempotent. Updates check
+the guest version and current capacity atomically, increment `__v`, and save
+`rsvpUpdatedAt`. A concurrent edit returns 409; reduced capacity returns a friendly
+`PARTY_SIZE_CHANGED` validation error. The UI refreshes the invitation while
+retaining the draft so the guest can review and retry.
 
 ---
 

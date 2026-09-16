@@ -31,3 +31,11 @@ export async function limitAuth(action: "signup" | "login", email?: string) {
   if (!email) await consume(`global:${action}`, action === "signup" ? 30 : 60, 60000);
   if (email) await consume(`${action}:${email}`, 10, 15 * 60000);
 }
+
+export async function limitGuestRsvp(token: string) {
+  await connectToDatabase(); await Counter.init();
+  // The invitation service verifies the token before calling this limiter.
+  // Rejected per-invitation attempts must not spend other guests' shared capacity.
+  await consume(`guest-rsvp:${token}`, 20, 15 * 60000);
+  await consume("global:guest-rsvp", 300, 60000);
+}

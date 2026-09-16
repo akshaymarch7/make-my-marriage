@@ -41,7 +41,7 @@ it("separates saved wedding members from labelled sample planning content", asyn
   const details = container.querySelector('[aria-label="Your wedding details"]')!;
   expect(details.textContent).toContain("Actual member");
   expect(details.textContent).not.toContain("Sample");
-  expect(container.textContent).toContain("Your wedding details, members, events, tasks, and guest totals use saved data");
+  expect(container.textContent).toContain("Your wedding details, members, events, tasks, guest totals, and RSVPs use saved data");
   expect(container.querySelector('[aria-label="Planning summaries"]')?.textContent).toContain("Sample");
   expect(container.querySelector('a[href="/settings/members"]')).not.toBeNull();
   await act(async () => root.render(<OverviewPage wedding={wedding} role="MANAGER"/>));
@@ -72,8 +72,20 @@ it("shows saved task progress, task links and the completed/empty states",async(
  await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:0,completed:0,upcoming:[]}}/>));expect(container.textContent).toContain("Add your first task");
 });
 
-it("distinguishes saved guest groups and capacity from invitation/RSVP sample figures",async()=>{
+it("distinguishes saved guest groups and capacity from RSVP attendance",async()=>{
  await act(async()=>root.render(<OverviewPage wedding={wedding} guests={{groups:3,capacity:11}}/>));
  const card=[...container.querySelectorAll('[aria-label="Planning summaries"] article')].find(node=>node.textContent?.includes("Guest groups"))!;expect(card.textContent).toContain("Guest groups3");expect(card.textContent).toContain("Maximum party capacity: 11 people");expect(card.textContent).not.toContain("Sample");expect(card.textContent).not.toContain("Invited guests");expect(card.querySelector('a[href="/guests"]')).not.toBeNull();
  await act(async()=>root.render(<OverviewPage wedding={wedding} guests={{groups:0,capacity:0}}/>));expect(container.querySelector('a[href="/guests/new"]')).not.toBeNull();
+});
+
+
+it("shows saved RSVP group totals separately from attending people and updates after refresh", async () => {
+  await act(async () => root.render(<OverviewPage wedding={wedding} rsvp={{ totalGuests: 10, pendingInvitations: 3, attendingInvitations: 5, notAttendingInvitations: 2, totalPeopleAttending: 18 }}/>));
+  const card = container.querySelector("#rsvp-summary")!;
+  expect(card.textContent).toContain("7 of 10 guest groups responded · 70%");
+  expect(card.textContent).toContain("18 people attending");
+  expect(card.textContent).not.toContain("Sample");
+  expect(card.querySelector('a[href="/guests?rsvpStatus=PENDING"]')).not.toBeNull();
+  await act(async () => root.render(<OverviewPage wedding={wedding} rsvp={{ totalGuests: 0, pendingInvitations: 0, attendingInvitations: 0, notAttendingInvitations: 0, totalPeopleAttending: 0 }}/>));
+  expect(container.querySelector("#rsvp-summary")!.textContent).toContain("Add your first guest");
 });

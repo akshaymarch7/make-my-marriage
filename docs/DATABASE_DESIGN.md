@@ -1333,7 +1333,14 @@ This supersedes the earlier guest token-hash recommendation; sessions and member
 invitation tokens retain their existing HMAC hashing rules.
 
 The initial Guest Management increment creates this secret but exposes no sharing
-URL or public invitation endpoint. Those are implemented separately.
+URL or public invitation endpoint. The subsequent sharing/RSVP increment
+(2026-09-16) retrieves the existing secret via a wedding-scoped explicit projection.
+Public token resolution projects only the owner fields needed for the invitation.
+RSVP updates condition on guest ID, wedding ID, token, `__v`, and current capacity;
+they increment `__v` and set status, attendance count, and `rsvpUpdatedAt` together.
+The wedding-scoped summary aggregates guest groups by status and sums saved
+attendance, independently of maximum party capacity. No new domain collection is
+needed. Existing HMAC-keyed MongoDB rate counters also limit public RSVP writes.
 
 ---
 

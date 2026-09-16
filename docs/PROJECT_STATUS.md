@@ -15,7 +15,7 @@ follow-up fixes and authorized publishing the source on 2026-09-11.
 Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved wedding details and members, with explicitly labelled
-saved event/task summaries and guest totals, with explicitly labelled sample previews for the remaining
+saved event/task summaries, guest totals, and RSVPs, with explicitly labelled sample previews for the remaining
 planning modules. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
 Development continues one feature at a time. On 2026-09-16, the user accepted
@@ -25,7 +25,10 @@ manual QA and code review, including the save-error fix, and authorized committi
 and pushing it. On 2026-09-16, the user accepted Task Management after
 code review and testing and authorized committing and pushing it. On 2026-09-16, the user accepted Guest Management after QA and manual testing
 and authorized committing and pushing it.
-Other planning previews remain sample data.
+Guest invitation sharing and public RSVP are implemented on 2026-09-16, following
+the approved Stitch designs. Local automated and isolated browser checks are complete;
+the user accepted the feature and quota review fix and authorized committing and
+pushing on 2026-09-16. Other planning previews remain sample data.
 On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
 role changes, and member removal, and authorized committing and pushing the
 source to GitHub. The implemented scope includes concurrent last-Admin protection.
@@ -47,6 +50,7 @@ user-reported production results, not an independent production audit.
 | Wedding events | Complete — implemented scope accepted | 2026-09-16 |
 | Wedding tasks | Complete — implemented scope accepted | 2026-09-16 |
 | Guest management | Complete — implemented scope accepted | 2026-09-16 |
+| Guest invitation sharing and public RSVP | Complete — implemented scope accepted | 2026-09-16 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -734,13 +738,69 @@ Approved screens in Stitch project `5169674594013355245`:
   No production deployment verification is claimed; a connected Vercel deployment
   may be triggered by the GitHub push.
 
+## 13. Guest invitation sharing and public RSVP
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-16
+
+- Retrieved and reviewed approved Stitch “Guest Invitations — Sharing” and
+  “Public Invitation — Pending RSVP” screens, including embedded response states.
+  Preserved the sharing layout’s two columns, contact/event cards, burgundy accents,
+  public floral hero, overlapping status card, dated itinerary, and formal RSVP
+  styling. The approved floral image is bundled locally. Layouts adapt to mobile.
+- Admins/Managers retrieve a stable guest URL from guest details, copy it with a
+  manual fallback, or open it in a new tab. Retrieval is wedding-scoped and uses
+  the configured application origin. Existing secrets are not regenerated.
+- Public `/invite/:token` requires no account. It displays only the invited group’s
+  name/capacity/RSVP, permitted wedding details and active invited ceremonies.
+  Contacts, notes, database IDs, other guests, and unrelated tokens are excluded.
+- Guests accept with a whole-number headcount within capacity, decline with zero,
+  and edit their response using the same link. Repeated identical submissions are
+  idempotent. Atomic version/capacity checks guard concurrent organiser edits.
+  Retryable errors retain input; conflicts refresh permitted details for review.
+  Invalid/deleted guest or wedding links show a generic unavailable state.
+- Saved RSVP groups and people attending replace the dashboard’s RSVP sample data.
+  Invitations & RSVP navigation links to this summary; pending guests are linked
+  to their existing filtered list. Focus/cross-tab signals refresh saved data.
+- Public routes use no-store, no-referrer, and noindex protections. Application
+  incoming request logging excludes token-bearing paths. RSVP writes reuse HMAC
+  keyed MongoDB counters: 300/minute globally and 20 per invitation/15 minutes.
+- Validation: 282 ordinary tests passed across the full suite and focused follow-up
+  runs; TypeScript, lint, and a production Webpack build passed. Coverage includes
+  tenant isolation, minimal public projections, stable sharing, active events,
+  RSVP capacity/concurrency/idempotency, origin checks, rate limits, retained form
+  choices, stale refresh protection, clipboard fallback, and saved summary totals.
+- Browser checks used actual components with isolated in-memory fixtures: desktop
+  sharing and public invitation; accepting for three people; mobile response edit
+  and decline; responsive sharing and RSVP forms. Both pages had no horizontal
+  overflow at mobile width. The local server was restarted; unauthenticated summary
+  returned JSON 401 and an invalid public invitation returned generic JSON 404
+  with privacy headers. No configured database mutations were performed for QA;
+  nine opt-in database tests remain skipped. These checks do not claim independent
+  production verification.
+- No new dependencies or database domain collections. Guest email delivery,
+  bulk sending/reminders, deadlines, individual family rosters, dietary fields,
+  transport, rooms, concierge details, and cover uploads remain outside this
+  increment. Project/API/database/system documentation updated together.
+- Review follow-up (2026-09-16): fixed shared RSVP quota exhaustion. The service
+  verifies the invitation and wedding and validates headcount before rate limiting;
+  per-invitation admission now precedes shared quota consumption. Rejected attempts
+  cannot drain capacity for other weddings. Regression coverage exercises 300
+  attempts on one valid invitation, 300 distinct nonexistent tokens, deleted
+  weddings, invalid capacity, and idempotent responses using in-memory persistence.
+  Follow-up validation: 286 tests passed (nine opt-in database tests skipped),
+  TypeScript and lint passed. No live database requests were used for this fix.
+- On 2026-09-16, the user accepted this feature and the quota review fix and
+  authorized committing and pushing the increment to GitHub. No production
+  deployment verification is claimed.
+
 ## Upcoming development
 
-Guest Management is accepted. Plan guest invitation sharing and the public
-invitation/RSVP experience next, beginning with approved responsive Stitch designs;
-email delivery and reminders can follow separately. Continue with expenses and
-vendors, wedding website/livestream, and gallery sharing one feature at a time.
-Event cover uploads remain a separate deferred increment.
+Guest invitation sharing/public RSVP is accepted. Plan guest email delivery and
+reminders as a separate increment.
+Continue with expenses and vendors, wedding website/livestream, and gallery sharing
+one feature at a time. Event cover uploads remain a separate deferred increment.
 
 ## Updating this document
 

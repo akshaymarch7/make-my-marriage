@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { Event } from "./event.model";
-import { findEvents, findEvent, patchEvent, archiveEventRecord } from "./repository";
+import { findInvitedEvents, findEvents, findEvent, patchEvent, archiveEventRecord } from "./repository";
 vi.mock("@/server/db/mongoose", () => ({ connectToDatabase: vi.fn() }));
 vi.mock("./event.model", () => ({ Event: { find: vi.fn(), findOne: vi.fn(), findOneAndUpdate: vi.fn() } }));
 const weddingId="111111111111111111111111", eventId="222222222222222222222222";
@@ -23,3 +23,5 @@ it("rejects invalid ObjectIds before issuing queries", async () => {
   await expect(findEvents("bad",{includeArchived:false})).rejects.toThrow();
   expect(Event.find).not.toHaveBeenCalled(); expect(Event.findOne).not.toHaveBeenCalled();
 });
+
+it("loads only selected active events within the invitation wedding",async()=>{lean.mockResolvedValue([]);await findInvitedEvents(weddingId,[eventId]);expect(Event.find).toHaveBeenCalledWith({weddingId,_id:{$in:[eventId]},archivedAt:null});vi.mocked(Event.find).mockClear();await findInvitedEvents(weddingId,[]);expect(Event.find).not.toHaveBeenCalled();});

@@ -1,0 +1,12 @@
+import {beforeEach,expect,it,vi}from"vitest";
+import{Guest}from"./guest.model";
+import{findInvitationSecret,findInvitationOwner,writeRsvp,readRsvpSummary}from"./invitation-repository";
+vi.mock("@/server/db/mongoose",()=>({connectToDatabase:vi.fn()}));
+vi.mock("./guest.model",()=>({Guest:{findOne:vi.fn(),findOneAndUpdate:vi.fn(),aggregate:vi.fn()}}));
+const wid="111111111111111111111111",gid="222222222222222222222222",token="a".repeat(43),lean=vi.fn(),select=vi.fn();
+beforeEach(()=>{vi.resetAllMocks();lean.mockResolvedValue(null);select.mockReturnValue({lean});vi.mocked(Guest.findOne).mockReturnValue({select} as never);vi.mocked(Guest.findOneAndUpdate).mockReturnValue({select} as never);vi.mocked(Guest.aggregate).mockResolvedValue([]);});
+it("retrieves the secret only after a wedding-scoped ID lookup",async()=>{await findInvitationSecret(wid,gid);expect(Guest.findOne).toHaveBeenCalledWith({weddingId:wid,_id:gid});expect(select).toHaveBeenCalledWith("invitationToken");});
+it("resolves a token without selecting private contact fields or notes",async()=>{await findInvitationOwner(token);expect(Guest.findOne).toHaveBeenCalledWith({invitationToken:token});expect(select).toHaveBeenCalledWith("weddingId name maxGuests invitedEventIds rsvpStatus attendingCount rsvpUpdatedAt __v");});
+it("atomically checks identity, token, wedding, version and capacity on RSVP",async()=>{await writeRsvp({id:gid,weddingId:wid,name:"Family",maxGuests:4,invitedEventIds:[],rsvpStatus:"PENDING",attendingCount:null,updatedAt:null,version:2},token,{status:"ATTENDING",attendingCount:3});expect(Guest.findOneAndUpdate).toHaveBeenCalledWith({_id:gid,weddingId:wid,invitationToken:token,__v:2,maxGuests:{$gte:3}},{$set:{rsvpStatus:"ATTENDING",attendingCount:3,rsvpUpdatedAt:expect.any(Date)},$inc:{__v:1}},expect.anything());});
+it("does not sum capacity as attendance and returns zeros for empty weddings",async()=>{expect(await readRsvpSummary(wid)).toEqual({totalGuests:0,pendingInvitations:0,attendingInvitations:0,notAttendingInvitations:0,totalPeopleAttending:0});const pipeline=vi.mocked(Guest.aggregate).mock.calls[0][0]!;expect(JSON.stringify(pipeline)).toContain('"$attendingCount"');expect(JSON.stringify(pipeline)).not.toContain('maxGuests');expect(JSON.stringify(pipeline)).toContain(wid);});
+it("rejects invalid IDs/tokens before database queries",async()=>{await expect(findInvitationSecret(wid,"bad")).rejects.toThrow();await expect(findInvitationOwner("bad")).rejects.toThrow();expect(Guest.findOne).not.toHaveBeenCalled();});

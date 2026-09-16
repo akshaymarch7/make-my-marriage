@@ -1,0 +1,8 @@
+import Link from "next/link";
+import type { RsvpSummary } from "@/modules/guests/invitation-schemas";
+import styles from "@/components/workspace/workspace.module.css";
+export function RsvpSummaryCard({ summary }: { summary: RsvpSummary }) {
+  const responded = summary.attendingInvitations + summary.notAttendingInvitations;
+  const percent = summary.totalGuests ? Math.round(responded / summary.totalGuests * 100) : 0;
+  return <section id="rsvp-summary" className={styles.panel}><h2>Who’s celebrating?</h2>{summary.totalGuests ? <><p className={styles.muted}>{responded} of {summary.totalGuests} guest groups responded · {percent}%</p><div className={styles.rsvp}><div className={styles.ring} style={{ background: `conic-gradient(#733344 0% ${percent}%, #eee5d9 ${percent}% 100%)` }} role="img" aria-label={`${responded} of ${summary.totalGuests} guest groups responded`}><div><strong>{responded}</strong><span>responses</span></div></div><div className={styles.legend}><p><i/>Attending groups <strong>{summary.attendingInvitations}</strong></p><p><i/>Not attending <strong>{summary.notAttendingInvitations}</strong></p><p><i/>Pending groups <strong>{summary.pendingInvitations}</strong></p></div></div><p className={styles.muted}><strong>{summary.totalPeopleAttending}</strong> people attending</p>{!responded && <p className={styles.muted}>No responses yet. Share a guest’s invitation link to start collecting RSVPs.</p>}<Link href="/guests?rsvpStatus=PENDING" className={styles.textLink}>View pending guests →</Link></> : <p className={styles.muted}>Add your first guest to start planning your invitations.</p>}<p><Link href="/guests" className={styles.textLink}>View guests &amp; invitations →</Link></p></section>;
+}
