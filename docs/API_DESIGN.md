@@ -1230,6 +1230,21 @@ Example:
 GET /api/tasks?status=TODO&mine=true&page=1&limit=50
 ```
 
+### Implemented V1 behaviour (2026-09-16)
+
+- Admins and Managers have the same task permissions. Wedding scope comes from
+  authenticated membership. Missing or cross-wedding resources return `NOT_FOUND`.
+- The list response uses `{ data, pagination: { page, limit, total, totalPages } }`.
+  Page defaults to 1 (maximum 100000); limit defaults to 20 (maximum 100).
+  Ordering is newest creation first, with ID as a stable tie-breaker.
+- `mine=true` means the caller's current membership ID; `mine=false` disables it.
+  Filters combine with AND. A conflicting explicit assignee and `mine=true`
+  produce no matches. `eventId=none` selects general wedding tasks, and
+  `assignedMembershipId=none` selects unassigned tasks.
+- Responses include task fields and nullable `assignee` (membership ID, name,
+  role) and `event` (ID, name, archivedAt) summaries. No user email is exposed.
+
+
 ---
 
 # 35. Create Task
@@ -1256,6 +1271,19 @@ Backend validates:
 assignedMembership belongs to current Wedding
 event belongs to current Wedding
 ```
+
+Title is required (trimmed, maximum 200 characters). Description is optional
+(maximum 2000); priority defaults to `MEDIUM`, status to `TODO`. Optional member,
+event, and due date can be omitted or set to null. New associations require a
+current member and an active event in the wedding. Existing archived-event or
+removed-member references remain visible and can be retained or cleared on edit.
+The UI labels a missing assignee as “Former member”.
+
+Due dates use ISO instants in the API and MongoDB. The date-only UI converts
+midnight in the wedding timezone to UTC; overdue means an incomplete task whose
+wedding-local due date is before today. Unchanged timestamps retain precision.
+Creating an already completed task sets `completedAt` on the server.
+
 
 ---
 
@@ -1290,6 +1318,12 @@ If moved away from `COMPLETED`:
 ```text
 completedAt = null
 ```
+
+Metadata edits to an already completed task preserve its completion timestamp.
+The body must contain at least one supported field; wedding ownership and
+`completedAt` cannot be supplied by callers. An atomic version check returns
+`CONFLICT` if another write occurs between the service read and update.
+
 
 ---
 

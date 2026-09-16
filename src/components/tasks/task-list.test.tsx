@@ -1,0 +1,11 @@
+// @vitest-environment happy-dom
+import { renderToStaticMarkup } from "react-dom/server";
+import { expect,it,vi } from "vitest";
+import { TaskList } from "./task-list";
+import { taskQuerySchema, type TaskView } from "@/modules/tasks/schemas";
+vi.mock("./task-actions",()=>({TaskActions:()=>null}));
+const choices={members:[],events:[],currentMembershipId:"member"};
+function render(query:Record<string,string>={},data:TaskView[]=[],total=0){const parsed=taskQuerySchema.parse(query);const element=document.createElement("div");element.innerHTML=renderToStaticMarkup(<TaskList result={{data,pagination:{page:parsed.page,limit:parsed.limit,total,totalPages:Math.ceil(total/parsed.limit)}}} choices={choices} query={parsed} today="2027-02-13" timeZone="Asia/Kolkata" userId="user" weddingId="wedding"/>);return element;}
+it("distinguishes empty, filtered and My Tasks views",()=>{expect(render().textContent).toContain("A little planning goes a long way");expect(render({priority:"HIGH"}).textContent).toContain("No tasks match these filters");expect(render({mine:"true"}).textContent).toContain("You don’t have any assigned tasks yet");expect(render({status:"COMPLETED"}).textContent).toContain("Your completed tasks will appear here");});
+it("preserves filters in pagination and offers recovery after deleting the last page",()=>{const empty=render({page:"3",priority:"HIGH",mine:"true"},[],40);expect(empty.textContent).toContain("No tasks on this page");const link=[...empty.querySelectorAll("a")].find(a=>a.textContent==="Back to first page")!;expect(link.getAttribute("href")).toContain("priority=HIGH");expect(link.getAttribute("href")).toContain("mine=true");expect(link.getAttribute("href")).toContain("page=1");});
+it("keeps archived event and former-member context visible on overdue tasks",()=>{const task:TaskView={id:"task",title:"Plan menu",description:"",assignedMembershipId:"removed",eventId:"event",dueDate:"2027-02-11T18:30:00Z",priority:"HIGH",status:"TODO",completedAt:null,assignee:null,event:{id:"event",name:"Sangeet",archivedAt:"2027-02-10T00:00:00Z"}};const view=render({},[task],1);expect(view.textContent).toContain("Former member");expect(view.textContent).toContain("Sangeet (Archived)");expect(view.textContent).toContain("Overdue");});

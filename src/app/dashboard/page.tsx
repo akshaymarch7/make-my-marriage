@@ -1,3 +1,4 @@
+import { getTaskSummary } from "@/modules/tasks/service";
 import { listEvents } from "@/modules/events/service";
 import { listMembers } from "@/modules/memberships/service";
 import { redirect } from "next/navigation";
@@ -13,6 +14,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   if (!account) redirect("/login");
   if (!account.wedding || !account.membership) redirect("/onboarding");
   const members = (await listMembers(account.user.id)).map(member => ({ id: member.user.id, name: member.user.name, role: member.role }));
-  const events = await listEvents(account.user.id);
-  return <WeddingShell user={account.user} weddingId={account.wedding.id} role={account.membership.role}><OverviewPage events={events} members={members} role={account.membership.role} wedding={account.wedding} updated={query.success && query.data.updated === "1"}/></WeddingShell>;
+  const [events, tasks] = await Promise.all([listEvents(account.user.id), getTaskSummary(account.user.id)]);
+  return <WeddingShell user={account.user} weddingId={account.wedding.id} role={account.membership.role}><OverviewPage tasks={tasks} events={events} members={members} role={account.membership.role} wedding={account.wedding} updated={query.success && query.data.updated === "1"}/></WeddingShell>;
 }

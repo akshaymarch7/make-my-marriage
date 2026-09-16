@@ -15,14 +15,15 @@ follow-up fixes and authorized publishing the source on 2026-09-11.
 Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved wedding details and members, with explicitly labelled
-saved event summaries and explicitly labelled sample previews for the remaining
+saved event and task summaries and explicitly labelled sample previews for the remaining
 planning modules. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
 Development continues one feature at a time. On 2026-09-16, the user accepted
 the V1 workspace skeleton after testing and code review and authorized committing
 and pushing it. On 2026-09-16, the user also accepted Wedding Events after
 manual QA and code review, including the save-error fix, and authorized committing
-and pushing it. Other planning previews remain sample data.
+and pushing it. On 2026-09-16, the user accepted Task Management after
+code review and testing and authorized committing and pushing it. Other planning previews remain sample data.
 On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
 role changes, and member removal, and authorized committing and pushing the
 source to GitHub. The implemented scope includes concurrent last-Admin protection.
@@ -42,6 +43,7 @@ user-reported production results, not an independent production audit.
 | Initial Vercel deployment and custom domain | Live — confirmed by user | 2026-09-15 |
 | Wedding workspace skeleton | Complete — implemented scope accepted | 2026-09-15 |
 | Wedding events | Complete — implemented scope accepted | 2026-09-16 |
+| Wedding tasks | Complete — implemented scope accepted | 2026-09-16 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -632,13 +634,60 @@ Approved screens in Stitch project `5169674594013355245`:
   No production deployment verification is claimed; a connected Vercel deployment
   may be triggered by the GitHub push.
 
+## 11. Wedding tasks
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-16
+
+- Used the approved Stitch task list, filtered/completed, and delete/error states.
+  Create/edit/details follow the existing Events forms. Responsive website UI
+  includes task lists, empty states, filters, pagination, details, editing,
+  inline status updates, permanent deletion confirmation, and retryable errors.
+- Admins and Managers can manage tasks at `/tasks`, `/api/tasks`, and
+  `/api/tasks/:taskId`. Every lookup/write is wedding-scoped; IDs, queries and
+  bodies are validated. Assignees are current wedding memberships; new event
+  links require active events in the same wedding. Existing archived-event and
+  former-member context stays visible and can be retained or cleared.
+- Fields: title, optional description, single member, optional event and due date,
+  priority, and status. All Tasks/My Tasks/Completed views support status,
+  priority, member and event filters, including unassigned/general tasks.
+- Due dates are entered/displayed in the wedding timezone and stored as UTC.
+  Overdue starts after the due calendar day. Completed timestamps are set on
+  completion, preserved during metadata edits, and cleared on reopening.
+  Optimistic version checks reject writes racing with another update.
+- The sidebar Tasks link and dashboard task totals/nearest-due incomplete tasks
+  now use saved data. Empty and all-completed summaries replace task fixtures.
+  Other unimplemented modules retain labelled samples. Existing focus and
+  cross-tab signals refresh task views and dashboard summaries.
+- Forms retain input after failures and through session expiry/reauthentication
+  in the same open tab. Account or wedding changes discard the draft. Unsaved
+  changes require confirmation before leaving; reload/close does not persist it.
+- Validation: 214 ordinary tests, TypeScript, lint, and production Webpack build
+  passed. Coverage includes scoping, reference validation, completion transitions,
+  concurrent updates, filters/pagination, auth/origin boundaries, form failure and
+  session retention, deletion confirmation, and saved dashboard summaries.
+- Browser checks used actual components with isolated in-memory fixtures:
+  desktop list and creation, My Tasks, mobile details/edit/delete and unsaved
+  confirmation. Mobile list had no horizontal overflow. No configured database
+  mutations were made for these checks; nine opt-in database tests remain skipped.
+  The local server was restarted, and `/api/tasks` returned the expected no-store
+  JSON 401 authentication response. On 2026-09-16, the user confirmed testing
+  and code review were complete and accepted the feature.
+- API implementation details are recorded in `API_DESIGN.md`. No new dependencies,
+  comments, attachments, subtasks, reminders, or other future features were added.
+  The user authorized committing and pushing this increment on 2026-09-16.
+  No production deployment verification is claimed; a connected Vercel deployment
+  may be triggered by the GitHub push.
+
 ## Upcoming development
 
-Wedding Events is accepted. Plan task management next: list/create/edit/delete,
-member assignment, optional event association, due dates, priorities, status,
-filters, and saved dashboard summaries. Finalise responsive Stitch designs before
-implementation. Event cover uploads remain a separate deferred increment. Continue with guests/invitations/RSVP, expenses and vendors, wedding
-website/livestream, and gallery sharing, confirming each increment before work.
+Task Management is accepted. Plan Guest Management next: guest list, details,
+create/edit/delete, party-size limits, event selection, search and filters, and
+saved guest totals. Finalise responsive Stitch designs before implementation.
+Keep invitation sharing/email delivery and public RSVP as subsequent increments. Continue
+with expenses and vendors, wedding website/livestream, and gallery sharing one
+feature at a time. Event cover uploads remain a separate deferred increment.
 
 ## Updating this document
 

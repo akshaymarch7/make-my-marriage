@@ -41,7 +41,7 @@ it("separates saved wedding members from labelled sample planning content", asyn
   const details = container.querySelector('[aria-label="Your wedding details"]')!;
   expect(details.textContent).toContain("Actual member");
   expect(details.textContent).not.toContain("Sample");
-  expect(container.textContent).toContain("Your wedding details, members, and events use saved data");
+  expect(container.textContent).toContain("Your wedding details, members, events, and tasks use saved data");
   expect(container.querySelector('[aria-label="Planning summaries"]')?.textContent).toContain("Sample");
   expect(container.querySelector('a[href="/settings/members"]')).not.toBeNull();
   await act(async () => root.render(<OverviewPage wedding={wedding} role="MANAGER"/>));
@@ -62,4 +62,12 @@ it("uses saved event counts and chronological upcoming events without archived o
   const links=[...container.querySelectorAll('a[href^="/events/"]')].map(a=>a.textContent);
   expect(links).toEqual(["Next celebration","Later celebration"]);
   expect(container.textContent).not.toContain("Archived celebration");expect(container.textContent).not.toContain("Past celebration");
+});
+
+it("shows saved task progress, task links and the completed/empty states",async()=>{
+ const task={id:"task-1",title:"Real menu task",description:"",assignedMembershipId:null,eventId:null,dueDate:"2027-02-11T18:30:00Z",priority:"HIGH" as const,status:"IN_PROGRESS" as const,completedAt:null,assignee:null,event:null};
+ await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:5,completed:2,upcoming:[task]}}/>));
+ const summary=container.querySelectorAll('[aria-label="Planning summaries"] article')[1];expect(summary.textContent).toContain("Tasks completed2 / 5");expect(summary.textContent).not.toContain("Sample");expect(container.querySelector('a[href="/tasks/task-1"]')?.textContent).toBe("Real menu task");expect(container.textContent).not.toContain("Prepare welcome hampers");
+ await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:5,completed:5,upcoming:[]}}/>));expect(container.textContent).toContain("All tasks completed");
+ await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:0,completed:0,upcoming:[]}}/>));expect(container.textContent).toContain("Add your first task");
 });
