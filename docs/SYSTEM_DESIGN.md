@@ -787,15 +787,12 @@ Use:
 
 The token should have enough entropy that guessing another guest's link is practically infeasible.
 
-A safer implementation can store:
-
-```text
-tokenHash
-```
-
-in MongoDB rather than the raw token.
-
-The raw token appears only in the generated URL.
+V1 uses the deliberate stable-sharing exception in `API_DESIGN.md` §44:
+store a high-entropy random invitation token in the Guest document so organisers
+can later retrieve the same sharing URL. Exclude it from ordinary queries and all
+guest CRUD responses; never log it. This supersedes the earlier optional hash-only
+suggestion for guest invitations. Session and member invitation tokens remain
+HMAC-hashed under their existing rules.
 
 ---
 

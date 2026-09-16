@@ -1266,7 +1266,7 @@ Guest {
 
     notes: String?,
 
-    invitationTokenHash: String,
+    invitationToken: String, // Stable share secret; excluded from ordinary reads.
 
     invitationSentAt: Date?,
 
@@ -1326,7 +1326,14 @@ This allows invitations to be:
 
 without changing the URL later.
 
-Only the token hash is stored.
+V1 follows the stable-sharing exception in `API_DESIGN.md` §44: store a
+cryptographically random, 32-byte invitation token on the Guest, with a unique
+index and excluded from default reads. CRUD projections must never expose it.
+This supersedes the earlier guest token-hash recommendation; sessions and member
+invitation tokens retain their existing HMAC hashing rules.
+
+The initial Guest Management increment creates this secret but exposes no sharing
+URL or public invitation endpoint. Those are implemented separately.
 
 ---
 
@@ -1398,7 +1405,7 @@ for V1.
 Recommended:
 
 ```javascript
-unique(invitationTokenHash)
+unique(invitationToken)
 
 index(weddingId, rsvpStatus)
 
@@ -2511,7 +2518,7 @@ weddingId + eventId
 ## Guests
 
 ```text
-invitationTokenHash UNIQUE
+invitationToken UNIQUE
 weddingId + rsvpStatus
 weddingId + name
 weddingId + emailNormalized

@@ -41,7 +41,7 @@ it("separates saved wedding members from labelled sample planning content", asyn
   const details = container.querySelector('[aria-label="Your wedding details"]')!;
   expect(details.textContent).toContain("Actual member");
   expect(details.textContent).not.toContain("Sample");
-  expect(container.textContent).toContain("Your wedding details, members, events, and tasks use saved data");
+  expect(container.textContent).toContain("Your wedding details, members, events, tasks, and guest totals use saved data");
   expect(container.querySelector('[aria-label="Planning summaries"]')?.textContent).toContain("Sample");
   expect(container.querySelector('a[href="/settings/members"]')).not.toBeNull();
   await act(async () => root.render(<OverviewPage wedding={wedding} role="MANAGER"/>));
@@ -70,4 +70,10 @@ it("shows saved task progress, task links and the completed/empty states",async(
  const summary=container.querySelectorAll('[aria-label="Planning summaries"] article')[1];expect(summary.textContent).toContain("Tasks completed2 / 5");expect(summary.textContent).not.toContain("Sample");expect(container.querySelector('a[href="/tasks/task-1"]')?.textContent).toBe("Real menu task");expect(container.textContent).not.toContain("Prepare welcome hampers");
  await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:5,completed:5,upcoming:[]}}/>));expect(container.textContent).toContain("All tasks completed");
  await act(async()=>root.render(<OverviewPage wedding={wedding} tasks={{total:0,completed:0,upcoming:[]}}/>));expect(container.textContent).toContain("Add your first task");
+});
+
+it("distinguishes saved guest groups and capacity from invitation/RSVP sample figures",async()=>{
+ await act(async()=>root.render(<OverviewPage wedding={wedding} guests={{groups:3,capacity:11}}/>));
+ const card=[...container.querySelectorAll('[aria-label="Planning summaries"] article')].find(node=>node.textContent?.includes("Guest groups"))!;expect(card.textContent).toContain("Guest groups3");expect(card.textContent).toContain("Maximum party capacity: 11 people");expect(card.textContent).not.toContain("Sample");expect(card.textContent).not.toContain("Invited guests");expect(card.querySelector('a[href="/guests"]')).not.toBeNull();
+ await act(async()=>root.render(<OverviewPage wedding={wedding} guests={{groups:0,capacity:0}}/>));expect(container.querySelector('a[href="/guests/new"]')).not.toBeNull();
 });

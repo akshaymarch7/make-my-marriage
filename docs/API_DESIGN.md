@@ -1377,6 +1377,42 @@ Do not introduce Elasticsearch.
 
 ---
 
+### Implemented guest CRUD behaviour (2026-09-16)
+
+- Admins and Managers have equal guest-management permissions. Wedding scope
+  comes from authenticated membership; missing/cross-wedding resources return
+  `NOT_FOUND`. IDs, bodies, and query parameters use strict validation.
+- Lists return `{ data, pagination: { page, limit, total, totalPages } }`.
+  Page defaults to 1 (maximum 100000), limit to 20 (maximum 100). Order by name,
+  then ID for stable pagination. Search is a literal, case-insensitive match on
+  name/email/phone, up to 120 characters; regex metacharacters are escaped.
+- RSVP/event filters and `invitationSent=true|false` combine with AND. The current
+  UI offers search, event, and read-only RSVP filters; no delivery actions.
+- Required name: trimmed, 1–120 characters. Optional email: valid address or empty,
+  maximum 254 characters. Optional phone: up to 40 characters using digits and
+  common phone punctuation. Optional notes: up to 2000 characters.
+- `maxGuests` defaults to 1 and must be an integer from 1 to 10000, including the
+  named guest. `invitedEventIds` defaults to an empty array, with at most 100 unique
+  valid event IDs. Requests also retain the shared 8 KiB JSON body limit.
+- New event associations require active events in the same wedding. Previously
+  associated archived/unavailable events can be retained or removed during editing.
+  Guests may be created with an empty selection, including when no active events exist.
+- Email is normalized for searching, with no uniqueness constraint: shared family
+  addresses are permitted. Optional contact/notes fields can be cleared using an
+  empty string; event selections can be cleared with `[]`.
+- Guest responses include the public guest fields and `invitedEvents` summaries
+  (ID, name, start, archive date). Invitation secrets and normalized-email internals
+  are excluded. A new guest has `PENDING` RSVP and null attendance/delivery dates.
+- Updates are partial, reject server-owned RSVP/token/delivery/ownership fields,
+  preserve existing RSVP and stable tokens, and reject capacity below recorded
+  attendance. Version and atomic capacity guards reject concurrent conflicts.
+- Deletion is permanent. Guest EmailJobs do not exist in this increment; their
+  cancellation must accompany the later delivery feature, as required below.
+- Dashboard totals count guest records as groups and sum maximum party sizes as
+  capacity. Neither number represents invitations sent or confirmed attendance.
+
+---
+
 # 40. Create Guest
 
 ## POST `/api/guests`
@@ -1404,9 +1440,9 @@ Backend:
 ```text
 validates event IDs
 ↓
-generates invitation token
+generates stable invitation token
 ↓
-stores token hash
+stores token with default selection disabled
 ↓
 creates Guest
 ```
@@ -1483,61 +1519,23 @@ Invitation link immediately becomes invalid.
 
 # 44. Guest Invitation Sharing URL
 
-The raw token should not be stored permanently, so we need a practical way for organisers to retrieve/share a guest URL.
+### Accepted V1 stable-sharing decision
 
-One recommended pattern:
+Generate a cryptographically random, high-entropy `invitationToken` when creating
+the Guest and store it in that document. This lets organisers repeatedly retrieve
+the same invitation URL in a later sharing increment. Use 32 random bytes encoded
+as base64url and a unique index. Exclude the secret from default model reads,
+ordinary CRUD projections, logs, and errors.
 
-### POST `/api/guests/:guestId/invitation-link`
+This is the deliberate exception to token hashing for shareable guest links.
+It supersedes the earlier hash-only guest recommendation. Session, password-reset,
+and member invitation tokens retain their existing HMAC-SHA-256 hashing rules.
+Gallery tokens follow the separate stable-sharing decision in their own feature.
 
-Authentication required.
-
-This action **rotates or creates a new invitation token only if necessary**.
-
-For V1, to preserve stable invitation links, I recommend storing the invitation token encrypted or storing a stable public invitation identifier separately rather than making the raw token impossible to retrieve.
-
-However, since our database decision was to hash secret tokens, a cleaner architecture is:
-
-> Generate the invitation link once and use email/share actions without requiring the frontend to retrieve the raw token later.
-
-For manual WhatsApp sharing, we still need a reusable link.
-
-Therefore V1 should use one of these two designs:
-
-### Recommended V1 adjustment
-
-Store:
-
-```text
-invitationTokenHash
-```
-
-and an additional random non-secret:
-
-```text
-invitationPublicId
-```
-
-But `publicId` alone would become the credential, making hashing irrelevant.
-
-Therefore the simpler practical decision is:
-
-> Store the guest invitation token encrypted at rest or accept storing the raw random token for this particular shareable stable-link use case.
-
-For V1 simplicity, we will use:
-
-```text
-invitationToken
-```
-
-as a random, high-entropy value stored in the Guest document.
-
-This is one deliberate exception to the general token-hashing preference because organisers repeatedly need to retrieve and share the same URL.
-
-Session and password-reset tokens remain hashed.
-
-Gallery token follows the same practical stable-sharing requirement and may also be stored as a high-entropy raw token.
-
-This should be documented as an accepted tradeoff.
+The initial Guest Management increment creates the secret but exposes no sharing
+endpoint, public invitation page, email delivery, or RSVP submission. Guest CRUD
+never returns the raw token. Later sharing retrieves the existing secret rather
+than rotating it on each request. Deleting its owner invalidates any future link.
 
 ---
 

@@ -15,7 +15,7 @@ follow-up fixes and authorized publishing the source on 2026-09-11.
 Signup and login lead to onboarding or the wedding overview,
 depending on membership. Homepage illustrations still use sample data; the
 wedding overview uses saved wedding details and members, with explicitly labelled
-saved event and task summaries and explicitly labelled sample previews for the remaining
+saved event/task summaries and guest totals, with explicitly labelled sample previews for the remaining
 planning modules. The user accepted authentication on 2026-09-10.
 The user accepted wedding onboarding and its review fixes on 2026-09-10.
 Development continues one feature at a time. On 2026-09-16, the user accepted
@@ -23,7 +23,9 @@ the V1 workspace skeleton after testing and code review and authorized committin
 and pushing it. On 2026-09-16, the user also accepted Wedding Events after
 manual QA and code review, including the save-error fix, and authorized committing
 and pushing it. On 2026-09-16, the user accepted Task Management after
-code review and testing and authorized committing and pushing it. Other planning previews remain sample data.
+code review and testing and authorized committing and pushing it. On 2026-09-16, the user accepted Guest Management after QA and manual testing
+and authorized committing and pushing it.
+Other planning previews remain sample data.
 On 2026-09-12, the user accepted member invitations, the signup-flow follow-up,
 role changes, and member removal, and authorized committing and pushing the
 source to GitHub. The implemented scope includes concurrent last-Admin protection.
@@ -44,6 +46,7 @@ user-reported production results, not an independent production audit.
 | Wedding workspace skeleton | Complete — implemented scope accepted | 2026-09-15 |
 | Wedding events | Complete — implemented scope accepted | 2026-09-16 |
 | Wedding tasks | Complete — implemented scope accepted | 2026-09-16 |
+| Guest management | Complete — implemented scope accepted | 2026-09-16 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -680,14 +683,64 @@ Approved screens in Stitch project `5169674594013355245`:
   No production deployment verification is claimed; a connected Vercel deployment
   may be triggered by the GitHub push.
 
+## 12. Guest management
+
+**Status:** Complete — implemented scope accepted
+
+**Recorded on:** 2026-09-16
+
+- Retrieved approved Stitch Guest List and Create screens. Implemented responsive
+  table/mobile cards, search, event/RSVP filters, pagination, empty/no-results states,
+  create, details, edit, delete confirmation, and retryable errors in the workspace.
+  Related screens follow the same visual language; prototype controls were omitted.
+- Admins and Managers manage guest groups through `/guests`, `/api/guests`, and
+  `/api/guests/:guestId`. All resources are wedding-scoped; IDs, queries and bodies
+  are validated. Searches treat input literally, including regex metacharacters.
+- One record represents an invitation/family group. Fields include name, optional
+  email/phone, maximum party size including the named guest, optional event
+  selections, and notes. Shared email addresses are allowed; contact fields and
+  event selections can be cleared. New guests have Pending RSVP and no attendance.
+- New associations require active events in the same wedding. Existing archived
+  event selections remain visible and can be retained or removed. No-events flows
+  work. Cross-wedding metadata is never loaded through guest references.
+- RSVP is read-only in this increment. Reducing party size below existing attendance
+  is rejected; atomic version/capacity checks guard concurrent updates. Deleting
+  a guest permanently removes its record and associated invitation secret.
+- Stable 32-byte invitation secrets follow API §44 and AGENTS.md, are excluded from
+  default reads and CRUD responses, and are never logged. API, database and system
+  documents now reconcile the older hash-only recommendation with that accepted
+  exception. Sharing/public RSVP/email remain deferred; no guest EmailJobs exist yet.
+- Guest navigation is active. Dashboard guest groups and maximum capacity use saved
+  data with an empty-state action, distinct from invitations sent or attendance.
+  Other unimplemented modules retain labelled samples. Existing focus/cross-tab
+  refresh signals update lists and dashboard totals after mutations.
+- Forms send changed fields only, retain input after failures and session expiry
+  in the same open tab, and discard drafts on account/wedding changes. Unsaved
+  navigation prompts are reused. Drafts do not persist across reload or tab closure.
+- Validation: 252 ordinary tests, TypeScript, lint, and production Webpack build
+  passed. Focused coverage includes tenant scoping, reference validation, capacity
+  guards, secret-safe projections, search escaping, auth/origin boundaries,
+  optional-field clearing, session retention, deletion and dashboard totals.
+- Browser checks used actual components with isolated in-memory fixtures: desktop
+  list/search/create/event selection and mobile edit/save/delete, unsaved prompts,
+  and guest cards. Mobile form/list had no horizontal overflow. No configured
+  database mutations were performed for QA; nine opt-in database tests remain skipped.
+  After restarting the local server, `/api/guests` returned the expected no-store
+  JSON 401 authentication response.
+- No new dependencies, CSV/bulk operations, invitation delivery, public RSVP,
+  seating, rooms, or transport features were added. On 2026-09-16, the user
+  confirmed QA and manual testing were complete and accepted the feature.
+- The user authorized committing and pushing this increment on 2026-09-16.
+  No production deployment verification is claimed; a connected Vercel deployment
+  may be triggered by the GitHub push.
+
 ## Upcoming development
 
-Task Management is accepted. Plan Guest Management next: guest list, details,
-create/edit/delete, party-size limits, event selection, search and filters, and
-saved guest totals. Finalise responsive Stitch designs before implementation.
-Keep invitation sharing/email delivery and public RSVP as subsequent increments. Continue
-with expenses and vendors, wedding website/livestream, and gallery sharing one
-feature at a time. Event cover uploads remain a separate deferred increment.
+Guest Management is accepted. Plan guest invitation sharing and the public
+invitation/RSVP experience next, beginning with approved responsive Stitch designs;
+email delivery and reminders can follow separately. Continue with expenses and
+vendors, wedding website/livestream, and gallery sharing one feature at a time.
+Event cover uploads remain a separate deferred increment.
 
 ## Updating this document
 
