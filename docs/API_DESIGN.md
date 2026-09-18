@@ -3768,3 +3768,41 @@ That document should define:
 - Dependency rules between modules
 
 After that, we can move into **frontend architecture/UI flows**, and then implementation can begin without Codex having to invent foundational architecture while writing code.
+## Organiser gallery implementation clarification — 2026-09-18
+
+The first gallery increment implements authenticated Admin/Manager uploads,
+browsing, single-photo downloads, and deletion. Public/gallery-token routes,
+settings and QR remain deferred.
+
+- Upload requests accept JPEG, PNG and WebP, 1 byte through 10 MiB each. The UI
+  selects at most 20 files per batch and uploads sequentially. No videos, SVG,
+  HEIC conversion, image editing, or bulk downloads/deletes in this increment.
+- The upload API reserves a server-issued staging key and binds its metadata to
+  the authenticated wedding and membership. Its PUT URL lasts 10 minutes and
+  signs Content-Type and Content-Length. Client bodies never supply weddingId.
+- Confirmation uses the documented body, matches the reserved metadata and
+  membership, checks actual R2 length/MIME and the image format signature, then
+  performs an ETag-conditional server-side copy to a new final key. Reads are
+  signed for 15 minutes. Replaying a PUT cannot overwrite a published photo.
+  Image signature checking is not full image decoding or malware scanning.
+- Confirmation is idempotent, including retries after an ambiguous response.
+  A pending upload can be confirmed until 24 hours after its PUT URL expires,
+  allowing reauthentication. Deleted uploads cannot be confirmed again.
+- Event assignment must reference an active event from the same wedding at
+  issuance. Existing photos remain visible if that event is later archived.
+- GET `/api/photos`: `limit` defaults to 24, maximum 48; `eventId=other` selects
+  unassigned Wedding Memories. Cursor encodes createdAt/_id and the active
+  event filter. Response retains `{ data, pagination: { nextCursor } }`, adding
+  `total` for the filtered count; each photo also includes mimeType and sizeBytes.
+  All queries include weddingId and READY state; pending/deleted rows are hidden.
+- GET `/api/photos/:photoId/download` returns `{ data: { url } }`: a newly signed
+  R2 GET with attachment Content-Disposition. The browser downloads directly
+  from R2; the app does not proxy the photo binary.
+- DELETE returns `{ data: { success: true } }` after R2 deletion and metadata
+  tombstoning. Storage failures retain metadata and return a retryable error.
+- Issuance is limited to 120 requests/member/15 minutes, then 600/wedding/15
+  minutes. Unauthenticated, malformed, and invalid-event requests do not consume
+  this quota. There is no application-wide photo quota shared by other weddings.
+- Private metadata and URL responses use Cache-Control: no-store. Provider
+  failures are mapped to a generic storage-unavailable error without logging
+  keys, credentials, signed URLs or raw provider responses.

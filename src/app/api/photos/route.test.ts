@@ -1,0 +1,16 @@
+import { beforeEach, afterEach, expect, it, vi } from "vitest";
+import { GET, POST } from "./route";
+import { POST as upload } from "./upload-url/route";
+import { DELETE } from "./[photoId]/route";
+import { GET as download } from "./[photoId]/download/route";
+import { authenticatedAccount } from "@/modules/auth/service";
+import * as photos from "@/modules/photos/service";
+vi.mock("@/modules/auth/service", () => ({ authenticatedAccount: vi.fn() }));
+vi.mock("@/modules/photos/service", () => ({ listPhotos: vi.fn(), confirmUpload: vi.fn(), requestUpload: vi.fn(), removePhoto: vi.fn(), downloadPhoto: vi.fn() }));
+const id = "a".repeat(24), context = { params: Promise.resolve({ photoId: id }) };
+const request = (method: string, body?: unknown, origin = "http://localhost:3000", query = "") => new Request(`http://localhost:3000/api/photos${query}`, { method, headers: { origin, "content-type": "application/json" }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"); vi.mocked(authenticatedAccount).mockResolvedValue({ user: { id: "actor" } } as never); });
+afterEach(() => vi.unstubAllEnvs());
+it("protects every photo route from unauthenticated access", async () => { vi.mocked(authenticatedAccount).mockResolvedValue(null); const responses = await Promise.all([GET(request("GET")), POST(request("POST", {})), upload(request("POST", {})), DELETE(request("DELETE"), context), download(request("GET"), context)]); expect(responses.map(response => response.status)).toEqual([401,401,401,401,401]); Object.values(photos).forEach(fn => expect(fn).not.toHaveBeenCalled()); });
+it("rejects foreign origins, invalid IDs and unexpected delete bodies", async () => { expect((await upload(request("POST", {}, "https://elsewhere.test"))).status).toBe(403); expect((await POST(request("POST", {}, "https://elsewhere.test"))).status).toBe(403); expect((await DELETE(request("DELETE", undefined, "https://elsewhere.test"), context)).status).toBe(403); expect((await DELETE(request("DELETE", { weddingId: id }), context)).status).toBe(400); expect((await download(request("GET"), { params: Promise.resolve({ photoId: "bad" }) })).status).toBe(400); Object.values(photos).forEach(fn => expect(fn).not.toHaveBeenCalled()); });
+it("uses the authenticated identity and no-store for private URLs", async () => { vi.mocked(photos.listPhotos).mockResolvedValue({ data: [], total: 0, pagination: { nextCursor: null } }); const response = await GET(request("GET", undefined, undefined, "?limit=24")); expect(photos.listPhotos).toHaveBeenCalledWith("actor", { limit: "24" }); expect(response.headers.get("cache-control")).toBe("no-store"); expect(await response.json()).toEqual({ data: [], total: 0, pagination: { nextCursor: null } }); });

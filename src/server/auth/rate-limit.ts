@@ -39,3 +39,9 @@ export async function limitGuestRsvp(token: string) {
   await consume(`guest-rsvp:${token}`, 20, 15 * 60000);
   await consume("global:guest-rsvp", 300, 60000);
 }
+
+export async function limitPhotoUploads(weddingId: string, memberId: string) {
+  await connectToDatabase(); await Counter.init();
+  await consume(`photo-upload:member:${memberId}`, 120, 15 * 60000);
+  await consume(`photo-upload:wedding:${weddingId}`, 600, 15 * 60000);
+}

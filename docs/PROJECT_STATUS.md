@@ -1,6 +1,6 @@
 # Make My Marriage — Project Status
 
-**Last updated:** 2026-09-16
+**Last updated:** 2026-09-18
 
 This is the ongoing record of major development milestones. Read it before
 starting development and update it whenever a major feature is implemented or
@@ -8,6 +8,13 @@ materially changed. Product scope and architecture remain defined by the PRD,
 System Design, Database Design, and API Design documents.
 
 ## Current position
+
+On 2026-09-18, the user prioritised gallery image upload and viewing ahead of
+other deferred features. R2 infrastructure and credentials are configured;
+the organiser gallery is implemented. On 2026-09-18, the user authorised committing
+and pushing this increment to GitHub. Automated tests,
+isolated desktop/mobile UI checks, and a real development-bucket upload/read/delete
+check passed. Production gallery deployment and manual acceptance are pending.
 
 The scaffold, public homepage, authentication, wedding onboarding, and wedding
 detail editing are implemented. The user accepted the editing increment and
@@ -51,6 +58,8 @@ user-reported production results, not an independent production audit.
 | Wedding tasks | Complete — implemented scope accepted | 2026-09-16 |
 | Guest management | Complete — implemented scope accepted | 2026-09-16 |
 | Guest invitation sharing and public RSVP | Complete — implemented scope accepted | 2026-09-16 |
+| Gallery R2 setup | Configured — development storage verified | 2026-09-18 |
+| Organiser photo gallery | Implemented — source publication authorised | 2026-09-18 |
 
 Dates above record when progress was documented or verified, rather than
 asserting the original creation date of earlier work.
@@ -795,12 +804,93 @@ Approved screens in Stitch project `5169674594013355245`:
   authorized committing and pushing the increment to GitHub. No production
   deployment verification is claimed.
 
+## 14. Gallery R2 infrastructure setup
+
+**Initial status:** Configured — application integration pending
+
+**Follow-up on 2026-09-18:** Development storage operations are now verified;
+see milestone 15. The setup details below preserve the original setup record.
+
+**Recorded on:** 2026-09-18
+
+- User activated Cloudflare R2 and authorised browser setup, including explicit
+  confirmation to create separate bucket-scoped Object Read & Write credentials.
+- Created `make-my-marriage-dev` and `make-my-marriage-prod` in Asia-Pacific with
+  Standard storage. Both remain private; public development URLs are disabled.
+- Development CORS allows `http://localhost:3000`. Production CORS allows
+  `https://www.makemymarriage.in` and `https://makemymarriage.in`. Both allow
+  GET/PUT/HEAD, Content-Type, expose ETag, and cache preflight for 3600 seconds.
+- Separate active account API tokens are restricted to their corresponding
+  buckets. Development R2 values are saved in Git-ignored `.env.local` with
+  owner-only file permissions. Production values are saved as Vercel secrets
+  scoped to Production only. No secret values are recorded in documentation.
+- Verified bucket/CORS settings and token status in Cloudflare, local environment
+  presence/format, and all four saved Production variable entries in Vercel.
+  Actual signed upload/read/delete verification is pending application integration.
+- No production redeploy was triggered. Vercel settings take effect on the next
+  deployment. Existing `R2_PUBLIC_BASE_URL` placeholder was left unchanged; private
+  signed-URL storage does not require a public base URL. Preview deployments are
+  not configured for gallery storage in this step.
+- Gallery UI, upload APIs, photo metadata, viewing, downloads, deletion, guest
+  sharing, and QR functionality have not been implemented in this milestone.
+
+## 15. Organiser photo gallery
+
+**Status:** Implemented — source publication authorised
+
+**Recorded on:** 2026-09-18
+
+- Implemented the approved Stitch “Wedding Gallery — Overview” design
+  (screen `471e71e1b20249e7a53d4e47b42c7025`) within the existing workspace:
+  responsive photo cards, event filters, count, cursor pagination, empty/error
+  states, upload dialog, full-size viewer and permanent-delete confirmation.
+  Gallery navigation and the dashboard link now open `/gallery`.
+- Admins and Managers can upload multiple JPEG/PNG/WebP photos (10 MiB each,
+  20 selected per batch), optionally assign an active event, monitor individual
+  progress, pause, and retry failures while keeping successful photos. Files and
+  partial results stay in the tab across session expiry; switching accounts or
+  weddings unmounts the draft. Navigation guards warn before discarding files.
+- Private R2 signed uploads and reads are working. Server-issued pending metadata
+  binds each upload to the wedding and uploading membership; confirmation checks
+  actual size/MIME/signature and conditionally copies to an independent final key.
+  Idempotent confirmation and hidden deletion tombstones prevent replay and
+  duplicate publication. Limits apply per member, then per wedding.
+- Event filtering includes unassigned Wedding Memories and retained photos from
+  archived events. The viewer supports previous/next, arrow keys and swipe;
+  downloads obtain a fresh signed attachment URL. Storage deletion happens before
+  metadata tombstoning, and errors remain available for retry.
+- Added AWS S3 client/presigner dependencies for the R2 adapter. API, system and
+  database documents record the lifecycle extension, limits and download route.
+- Validation: 328 automated tests passed; ten opt-in tests skipped (nine database
+  tests plus the R2 smoke test). The R2 smoke test was also explicitly run and
+  passed against `make-my-marriage-dev`: CORS preflight, signed PUT, rejection
+  of a mismatched upload byte length, metadata and signature verification, ETag-conditional copy, original download and test-object
+  deletion. No live MongoDB records or production bucket objects were modified.
+  TypeScript and lint passed; webpack production build passed. Isolated browser
+  checks covered desktop/mobile layouts, event empty state, viewer navigation,
+  delete confirmation and refreshed photo count, valid/unsupported file selection,
+  mixed upload outcomes and retryable gallery errors using fake application data.
+- On 2026-09-18, the user authorised updating this status document and committing
+  and pushing the gallery increment to GitHub. This authorisation does not imply
+  an independently verified production deployment or completed manual QA.
+- Remaining verification: user QA/code review, real application/database end-to-end
+  acceptance, and production deployment verification.
+  Originals are lazy-loaded; thumbnail derivatives are deferred and browsing can
+  download up to 10 MiB/photo. Abandoned/replayed staging objects and failed-cleanup
+  orphans require future reconciliation; no automatic cleanup is implemented.
+  Guest gallery access/uploads, public links/QR, gallery settings, video/HEIC,
+  bulk operations, moderation, and image editing remain outside this increment.
+- Follow-up to milestone 14: development storage credentials/CORS are now verified
+  with actual object operations. Production and Preview integration are not tested.
+
 ## Upcoming development
 
-Guest invitation sharing/public RSVP is accepted. Plan guest email delivery and
-reminders as a separate increment.
-Continue with expenses and vendors, wedding website/livestream, and gallery sharing
-one feature at a time. Event cover uploads remain a separate deferred increment.
+The gallery source is authorised for publication. Manual application QA and
+production deployment verification remain to be recorded. No next feature is
+started by this publication step. Plan thumbnail optimisation and abandoned-object reconciliation before
+large-volume use. Follow with guest gallery sharing/uploads and QR codes.
+Guest email delivery/reminders, expenses/vendors, wedding website/livestream,
+and event cover uploads remain deferred.
 
 ## Updating this document
 

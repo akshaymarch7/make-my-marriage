@@ -1,0 +1,21 @@
+// @vitest-environment happy-dom
+import { act, useRef } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { UploadQueue } from "./upload-queue";
+const session = vi.hoisted(() => ({ revalidate: vi.fn(), status: "active" }));
+vi.mock("@/components/wedding/draft-session", () => ({ useWeddingDraftSession: () => session, WeddingDraftNotice: () => <p>Session notice</p> }));
+vi.mock("@/components/wedding/unsaved-changes", () => ({ useUnsavedChanges: () => null }));
+let root: Root, container: HTMLDivElement; const fetcher = vi.fn(), uploaded = vi.fn(); let puts = 0;
+class Upload {
+  upload = {}; status = 200; onload?: () => void; onabort?: () => void;
+  open() {} setRequestHeader() {} send() { puts++; queueMicrotask(() => this.onload?.()); } abort() { this.onabort?.(); }
+}
+function Harness() { const dialog = useRef<HTMLDialogElement>(null); return <UploadQueue dialog={dialog} events={[]} onUploaded={uploaded}/>; }
+beforeEach(async () => { vi.resetAllMocks(); puts = 0; session.revalidate.mockResolvedValue(true); vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true); vi.stubGlobal("fetch", fetcher); vi.stubGlobal("XMLHttpRequest", Upload); vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fixture"); vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {}); container = document.createElement("div"); document.body.append(container); root = createRoot(container); await act(async () => root.render(<Harness/>)); });
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+async function select(files: File[]) { const input = container.querySelector("input")!; Object.defineProperty(input, "files", { configurable: true, value: files }); await act(async () => input.dispatchEvent(new Event("change", { bubbles: true }))); }
+async function click(text: string) { const button = [...container.querySelectorAll("button")].find(button => button.textContent === text)!; expect(button).toBeTruthy(); await act(async () => { button.click(); await new Promise(resolve => setTimeout(resolve, 0)); }); }
+it("rejects unsupported and oversize files while keeping valid files eligible", async () => { const tooBig = new File(["x"], "large.jpg", { type: "image/jpeg" }); Object.defineProperty(tooBig, "size", { value: 10485761 }); await select([new File(["png"], "valid.png", { type: "image/png" }), new File(["svg"], "bad.svg", { type: "image/svg+xml" }), tooBig]); expect(container.textContent).toContain("1 remaining · 2 invalid"); expect(container.textContent).toContain("Maximum size is 10 MB"); expect(fetcher).not.toHaveBeenCalled(); });
+it("retains selected files when session revalidation fails and retries after reauthentication", async () => { await select([new File(["png"], "kept.png", { type: "image/png" })]); session.revalidate.mockResolvedValueOnce(false); await click("Upload 1 photo"); expect(container.textContent).toContain("kept.png"); expect(container.textContent).toContain("Ready to upload"); expect(fetcher).not.toHaveBeenCalled(); fetcher.mockImplementation(async url => Response.json({ data: String(url).includes("upload-url") ? { uploadUrl: "put", objectKey: "key" } : { id: "photo" } })); await click("Upload 1 photo"); expect(container.textContent).toContain("Uploaded ✓"); expect(puts).toBe(1); });
+it("retains successful uploads and retries only confirmation after a partial failure", async () => { await select([new File(["a"], "first.png", { type: "image/png" }), new File(["b"], "second.png", { type: "image/png" })]); let confirms = 0; fetcher.mockImplementation(async url => String(url).includes("upload-url") ? Response.json({ data: { uploadUrl: "put", objectKey: "key" } }) : ++confirms === 2 ? Response.json({ error: { message: "Temporary failure" } }, { status: 503 }) : Response.json({ data: { id: "photo" } })); await click("Upload 2 photos"); expect(container.textContent).toContain("1 uploaded · 1 remaining"); expect(container.textContent).toContain("Temporary failure"); expect(puts).toBe(2); await click("Retry"); expect(container.textContent).toContain("2 uploaded · 0 remaining"); expect(puts).toBe(2); expect(uploaded).toHaveBeenCalledTimes(2); });

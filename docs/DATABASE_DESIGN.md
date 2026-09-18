@@ -3209,3 +3209,32 @@ That document should define:
 - Email batch endpoints
 
 The API design should now be derived directly from this database model rather than inventing data structures independently.
+## Organiser photo lifecycle extension — 2026-09-18
+
+The initial Photo shape above described published metadata only. The first
+implementation extends that same collection (not a separate queue service) with:
+
+- `uploadKey`: unique server-issued staging object key, retained for idempotency.
+- `status`: PENDING, READY, or DELETED; only READY rows enter gallery queries.
+- `expiresAt`: PUT URL expiry; pending confirmation accepts a further 24 hours.
+- `objectKey`: staging key while pending, replaced atomically with an independent
+  final object key when the photo becomes READY.
+
+The original member uploader, metadata, and optional event are recorded at
+issuance. `createdAt` remains the reservation time and is the stable pagination
+ordering key. Both objectKey and uploadKey have unique indexes. Listing indexes
+are `(weddingId, status, createdAt DESC, _id DESC)` and
+`(weddingId, status, eventId, createdAt DESC, _id DESC)`.
+
+Deletion refines the earlier instruction to remove Photo metadata: the object
+is deleted first, then metadata becomes a hidden DELETED tombstone rather than
+being physically removed. This prevents late upload confirmations from
+resurrecting deleted photos. There is no soft-delete/restore feature in the UI.
+
+Concurrent confirmations copy to distinct final keys and compete for one atomic
+PENDING-to-READY update. Losing copies are removed. An ambiguous database write
+retains its verified object because it may already be referenced by a committed
+READY record. Staging cleanup after successful confirmation is best effort.
+Abandoned/replayed staging objects and ambiguous-write/cleanup-failure orphans
+require a future reconciliation process; do not add a TTL that drops the only
+metadata reference before object cleanup. No automated orphan cleanup is claimed.

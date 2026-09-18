@@ -2645,3 +2645,41 @@ With this system architecture frozen, the recommended design sequence is:
    - Resend
    - Vercel Cron
    - Production release workflow
+## Organiser gallery storage implementation — 2026-09-18
+
+`src/modules/photos` owns schemas, the Photo model, wedding-scoped persistence,
+and gallery use cases. `src/server/storage/r2.ts` owns R2 signing and object
+operations. The AWS S3 client and S3 request presigner are added for the immediate
+need to use R2's S3-compatible API; no external queue or service is introduced.
+
+The private adapter uses server-only R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME. R2_PUBLIC_BASE_URL is unused. Existing
+CORS needs only Content-Type for browser PUTs (Content-Length is set by the
+browser), plus GET/PUT/HEAD methods and the allowed app origins. Never expose
+credentials or publicise the bucket. Development and production use separate
+bucket-scoped credentials; Preview deployments still require their own setup.
+
+The browser uploads directly to a staging key. The server verifies length, MIME,
+and a 16-byte format signature, pinning inspection and copying to the same ETag.
+R2 copies into an independent final key, then MongoDB atomically publishes the
+row. Neither the upload body nor downloaded originals pass through an app API.
+See the API and database lifecycle clarifications for retry and deletion rules.
+
+The initial browser uses lazy-loaded originals with cursor pagination, and
+un-cropped originals in the viewer. Thumbnail derivatives/image optimisation
+remain deferred: browsing can download up to 10 MiB per image. Signed private
+photos deliberately bypass Next's public image optimiser/cache. The general
+recommendation above to optimise gallery images remains follow-up work, not a
+claim about this first implementation. Cleanup/reconciliation of abandoned
+objects also remains follow-up work.
+
+Selected files and partial results remain in memory across session expiry in the
+same tab; confirmation can retry after signing in again. An identity/wedding
+change discards that draft. Refreshing/closing the tab cannot restore File objects;
+the existing unsaved-changes guard warns before navigation. No persistent file
+cache is stored in localStorage.
+
+Verification: `npm test` uses mocked persistence/storage and component tests.
+`RUN_R2_SMOKE=1 npm test -- src/server/storage/r2.integration.test.ts` explicitly
+loads `.env.local`, refuses any bucket other than make-my-marriage-dev, and
+uploads/reads/deletes only a unique test-fixtures prefix. It never uses MongoDB.
